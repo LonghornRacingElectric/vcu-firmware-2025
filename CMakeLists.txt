@@ -53,7 +53,7 @@ include_directories(Core/Inc Libs/longhorn-lib-2025 Drivers/STM32H7xx_HAL_Driver
 
 add_definitions(-DDEBUG -DUSE_HAL_DRIVER -DSTM32H733xx)
 
-file(GLOB_RECURSE SOURCES "Core/*.*" "Drivers/*.*")
+file(GLOB_RECURSE SOURCES "Core/*.*" "Drivers/*.*" "Libs/longhorn-lib-2025/*.*")
 
 set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32H733VGTX_FLASH.ld)
 
