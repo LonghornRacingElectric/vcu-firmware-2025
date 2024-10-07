@@ -45,7 +45,7 @@ void MX_ADC1_Init(void)
   /** Common config
   */
   hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV4;
   hadc1.Init.Resolution = ADC_RESOLUTION_16B;
   hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
@@ -108,7 +108,7 @@ void MX_ADC2_Init(void)
   /** Common config
   */
   hadc2.Instance = ADC2;
-  hadc2.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1;
+  hadc2.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV4;
   hadc2.Init.Resolution = ADC_RESOLUTION_16B;
   hadc2.Init.ScanConvMode = ADC_SCAN_DISABLE;
   hadc2.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
@@ -166,21 +166,28 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
 
     __HAL_RCC_GPIOC_CLK_ENABLE();
     __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_GPIOB_CLK_ENABLE();
     /**ADC1 GPIO Configuration
     PC0     ------> ADC1_INP10
     PC1     ------> ADC1_INP11
     PA2     ------> ADC1_INP14
     PA3     ------> ADC1_INP15
+    PB0     ------> ADC1_INP9
     */
     GPIO_InitStruct.Pin = Temp3_Analog_Pin|Flow_Rate_Analog_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = Temp1_Analog_Pin|Temp2_Analog_Pin;
+    GPIO_InitStruct.Pin = GPIO_PIN_2|Temp2_Analog_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    GPIO_InitStruct.Pin = GPIO_PIN_0;
+    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* USER CODE BEGIN ADC1_MspInit 1 */
 
@@ -218,7 +225,7 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = Pump1_Current_Pin|Pump2_Current_Pin;
+    GPIO_InitStruct.Pin = GPIO_PIN_0|Pump2_Current_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -248,10 +255,13 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
     PC1     ------> ADC1_INP11
     PA2     ------> ADC1_INP14
     PA3     ------> ADC1_INP15
+    PB0     ------> ADC1_INP9
     */
     HAL_GPIO_DeInit(GPIOC, Temp3_Analog_Pin|Flow_Rate_Analog_Pin);
 
-    HAL_GPIO_DeInit(GPIOA, Temp1_Analog_Pin|Temp2_Analog_Pin);
+    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_2|Temp2_Analog_Pin);
+
+    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_0);
 
   /* USER CODE BEGIN ADC1_MspDeInit 1 */
 
@@ -280,7 +290,7 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
 
     HAL_GPIO_DeInit(GPIOC, Status_Red_Current_Pin|Status_Green_Current_Pin);
 
-    HAL_GPIO_DeInit(GPIOB, Pump1_Current_Pin|Pump2_Current_Pin);
+    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_0|Pump2_Current_Pin);
 
   /* USER CODE BEGIN ADC2_MspDeInit 1 */
 
