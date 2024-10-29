@@ -55,7 +55,22 @@ add_definitions(-DDEBUG -DUSE_HAL_DRIVER -DSTM32H733xx)
 
 file(GLOB_RECURSE SOURCES "Core/*.*" "Drivers/*.*")
 
-set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32H733VGTX_FLASH.ld)
+set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32H733VGTX_FLASH.ld
+        Libs/vcu-model-2025/src/VcuModel.cpp
+        Libs/vcu-model-2025/src/VcuModel.h
+        Libs/vcu-model-2025/src/VcuParameters.h
+        Libs/vcu-model-2025/blocks/AppsProcessor.cpp
+        Libs/vcu-model-2025/blocks/AppsProcessor.h
+        Libs/vcu-model-2025/blocks/Stompp.cpp
+        Libs/vcu-model-2025/blocks/Stompp.h
+        Libs/vcu-model-2025/blocks/TorqueMap.cpp
+        Libs/vcu-model-2025/blocks/TorqueMap.h
+        Libs/vcu-model-2025/blocks/BreakLight.cpp
+        Libs/vcu-model-2025/blocks/BreakLight.h
+        Libs/vcu-model-2025/util/Timer.cpp
+        Libs/vcu-model-2025/util/Timer.h
+        Libs/vcu-model-2025/util/CurveParameter.cpp
+        Libs/vcu-model-2025/util/CurveParameter.h)
 
 add_link_options(-Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
 add_link_options(-mcpu=cortex-m7 -mthumb -mthumb-interwork)
