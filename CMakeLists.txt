@@ -59,18 +59,20 @@ set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32H733VGTX_FLASH.ld
         Libs/vcu-model-2025/src/VcuModel.cpp
         Libs/vcu-model-2025/src/VcuModel.h
         Libs/vcu-model-2025/src/VcuParameters.h
-        Libs/vcu-model-2025/blocks/AppsProcessor.cpp
-        Libs/vcu-model-2025/blocks/AppsProcessor.h
-        Libs/vcu-model-2025/blocks/Stompp.cpp
-        Libs/vcu-model-2025/blocks/Stompp.h
-        Libs/vcu-model-2025/blocks/TorqueMap.cpp
-        Libs/vcu-model-2025/blocks/TorqueMap.h
-        Libs/vcu-model-2025/blocks/BreakLight.cpp
-        Libs/vcu-model-2025/blocks/BreakLight.h
-        Libs/vcu-model-2025/util/Timer.cpp
-        Libs/vcu-model-2025/util/Timer.h
-        Libs/vcu-model-2025/util/CurveParameter.cpp
-        Libs/vcu-model-2025/util/CurveParameter.h)
+        Libs/vcu-model-2025/src/blocks/AppsProcessor.cpp
+        Libs/vcu-model-2025/inc/blocks/AppsProcessor.h
+        Libs/vcu-model-2025/src/blocks/Stompp.cpp
+        Libs/vcu-model-2025/inc/blocks/Stompp.h
+        Libs/vcu-model-2025/src/blocks/TorqueMap.cpp
+        Libs/vcu-model-2025/inc/blocks/TorqueMap.h
+        Libs/vcu-model-2025/src/blocks/BreakLight.cpp
+        Libs/vcu-model-2025/inc/blocks/BreakLight.h
+        Libs/vcu-model-2025/src/util/Timer.cpp
+        Libs/vcu-model-2025/inc/util/Timer.h
+        Libs/vcu-model-2025/src/util/Lookup1D.cpp
+        Libs/vcu-model-2025/inc/util/Lookup1D.h
+        Libs/vcu-model-2025/src/util/Lookup2D.cpp
+        Libs/vcu-model-2025/inc/util/Lookup2D.h)
 
 add_link_options(-Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
 add_link_options(-mcpu=cortex-m7 -mthumb -mthumb-interwork)
