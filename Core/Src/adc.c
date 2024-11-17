@@ -26,6 +26,7 @@
 
 ADC_HandleTypeDef hadc1;
 ADC_HandleTypeDef hadc2;
+ADC_HandleTypeDef hadc3;
 
 /* ADC1 init function */
 void MX_ADC1_Init(void)
@@ -75,7 +76,7 @@ void MX_ADC1_Init(void)
 
   /** Configure Regular Channel
   */
-  sConfig.Channel = ADC_CHANNEL_11;
+  sConfig.Channel = ADC_CHANNEL_9;
   sConfig.Rank = ADC_REGULAR_RANK_1;
   sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
@@ -146,6 +147,64 @@ void MX_ADC2_Init(void)
   /* USER CODE END ADC2_Init 2 */
 
 }
+/* ADC3 init function */
+void MX_ADC3_Init(void)
+{
+
+  /* USER CODE BEGIN ADC3_Init 0 */
+
+  /* USER CODE END ADC3_Init 0 */
+
+  ADC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN ADC3_Init 1 */
+
+  /* USER CODE END ADC3_Init 1 */
+
+  /** Common config
+  */
+  hadc3.Instance = ADC3;
+  hadc3.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1;
+  hadc3.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc3.Init.DataAlign = ADC3_DATAALIGN_RIGHT;
+  hadc3.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc3.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  hadc3.Init.LowPowerAutoWait = DISABLE;
+  hadc3.Init.ContinuousConvMode = DISABLE;
+  hadc3.Init.NbrOfConversion = 1;
+  hadc3.Init.DiscontinuousConvMode = DISABLE;
+  hadc3.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc3.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc3.Init.DMAContinuousRequests = DISABLE;
+  hadc3.Init.SamplingMode = ADC_SAMPLING_MODE_NORMAL;
+  hadc3.Init.ConversionDataManagement = ADC_CONVERSIONDATA_DR;
+  hadc3.Init.Overrun = ADC_OVR_DATA_PRESERVED;
+  hadc3.Init.LeftBitShift = ADC_LEFTBITSHIFT_NONE;
+  hadc3.Init.OversamplingMode = DISABLE;
+  hadc3.Init.Oversampling.Ratio = ADC3_OVERSAMPLING_RATIO_2;
+  if (HAL_ADC_Init(&hadc3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Regular Channel
+  */
+  sConfig.Channel = ADC_CHANNEL_1;
+  sConfig.Rank = ADC_REGULAR_RANK_1;
+  sConfig.SamplingTime = ADC3_SAMPLETIME_2CYCLES_5;
+  sConfig.SingleDiff = ADC_DIFFERENTIAL_ENDED;
+  sConfig.OffsetNumber = ADC_OFFSET_NONE;
+  sConfig.Offset = 0;
+  sConfig.OffsetSign = ADC3_OFFSET_SIGN_NEGATIVE;
+  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC3_Init 2 */
+
+  /* USER CODE END ADC3_Init 2 */
+
+}
 
 static uint32_t HAL_RCC_ADC12_CLK_ENABLED=0;
 
@@ -164,27 +223,22 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
       __HAL_RCC_ADC12_CLK_ENABLE();
     }
 
-    __HAL_RCC_GPIOC_CLK_ENABLE();
     __HAL_RCC_GPIOA_CLK_ENABLE();
     __HAL_RCC_GPIOB_CLK_ENABLE();
     /**ADC1 GPIO Configuration
-    PC0     ------> ADC1_INP10
-    PC1     ------> ADC1_INP11
-    PA2     ------> ADC1_INP14
     PA3     ------> ADC1_INP15
+    PA4     ------> ADC1_INP18
+    PA5     ------> ADC1_INN18
+    PA6     ------> ADC1_INP3
     PB0     ------> ADC1_INP9
+    PB1     ------> ADC1_INP5
     */
-    GPIO_InitStruct.Pin = Temp3_Analog_Pin|Flow_Rate_Analog_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = GPIO_PIN_2|Temp2_Analog_Pin;
+    GPIO_InitStruct.Pin = Rad_Fans_Current_Pin|Thermistor_Pin|Pump_2_Current_Pin|Status_Red_Current_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = GPIO_PIN_0;
+    GPIO_InitStruct.Pin = Status_Green_Current_Pin|Bat_Fans_Current_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -210,29 +264,48 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
     /**ADC2 GPIO Configuration
     PA6     ------> ADC2_INP3
     PA7     ------> ADC2_INP7
-    PC4     ------> ADC2_INP4
     PC5     ------> ADC2_INP8
     PB0     ------> ADC2_INP9
-    PB1     ------> ADC2_INP5
     */
-    GPIO_InitStruct.Pin = Brake_Light_Current_Pin|Radiator_Fans_Current_Pin;
+    GPIO_InitStruct.Pin = Status_Red_Current_Pin|Pump_1_Current_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = Status_Red_Current_Pin|Status_Green_Current_Pin;
+    GPIO_InitStruct.Pin = Brake_Lights_Current_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+    HAL_GPIO_Init(Brake_Lights_Current_GPIO_Port, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = GPIO_PIN_0|Pump2_Current_Pin;
+    GPIO_InitStruct.Pin = Status_Green_Current_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+    HAL_GPIO_Init(Status_Green_Current_GPIO_Port, &GPIO_InitStruct);
 
   /* USER CODE BEGIN ADC2_MspInit 1 */
 
   /* USER CODE END ADC2_MspInit 1 */
+  }
+  else if(adcHandle->Instance==ADC3)
+  {
+  /* USER CODE BEGIN ADC3_MspInit 0 */
+
+  /* USER CODE END ADC3_MspInit 0 */
+    /* ADC3 clock enable */
+    __HAL_RCC_ADC3_CLK_ENABLE();
+
+    __HAL_RCC_GPIOC_CLK_ENABLE();
+    /**ADC3 GPIO Configuration
+    PC2_C     ------> ADC3_INN1
+    PC3_C     ------> ADC3_INP1
+    */
+    HAL_SYSCFG_AnalogSwitchConfig(SYSCFG_SWITCH_PC2, SYSCFG_SWITCH_PC2_OPEN);
+
+    HAL_SYSCFG_AnalogSwitchConfig(SYSCFG_SWITCH_PC3, SYSCFG_SWITCH_PC3_OPEN);
+
+  /* USER CODE BEGIN ADC3_MspInit 1 */
+
+  /* USER CODE END ADC3_MspInit 1 */
   }
 }
 
@@ -251,17 +324,16 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
     }
 
     /**ADC1 GPIO Configuration
-    PC0     ------> ADC1_INP10
-    PC1     ------> ADC1_INP11
-    PA2     ------> ADC1_INP14
     PA3     ------> ADC1_INP15
+    PA4     ------> ADC1_INP18
+    PA5     ------> ADC1_INN18
+    PA6     ------> ADC1_INP3
     PB0     ------> ADC1_INP9
+    PB1     ------> ADC1_INP5
     */
-    HAL_GPIO_DeInit(GPIOC, Temp3_Analog_Pin|Flow_Rate_Analog_Pin);
+    HAL_GPIO_DeInit(GPIOA, Rad_Fans_Current_Pin|Thermistor_Pin|Pump_2_Current_Pin|Status_Red_Current_Pin);
 
-    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_2|Temp2_Analog_Pin);
-
-    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_0);
+    HAL_GPIO_DeInit(GPIOB, Status_Green_Current_Pin|Bat_Fans_Current_Pin);
 
   /* USER CODE BEGIN ADC1_MspDeInit 1 */
 
@@ -281,20 +353,30 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
     /**ADC2 GPIO Configuration
     PA6     ------> ADC2_INP3
     PA7     ------> ADC2_INP7
-    PC4     ------> ADC2_INP4
     PC5     ------> ADC2_INP8
     PB0     ------> ADC2_INP9
-    PB1     ------> ADC2_INP5
     */
-    HAL_GPIO_DeInit(GPIOA, Brake_Light_Current_Pin|Radiator_Fans_Current_Pin);
+    HAL_GPIO_DeInit(GPIOA, Status_Red_Current_Pin|Pump_1_Current_Pin);
 
-    HAL_GPIO_DeInit(GPIOC, Status_Red_Current_Pin|Status_Green_Current_Pin);
+    HAL_GPIO_DeInit(Brake_Lights_Current_GPIO_Port, Brake_Lights_Current_Pin);
 
-    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_0|Pump2_Current_Pin);
+    HAL_GPIO_DeInit(Status_Green_Current_GPIO_Port, Status_Green_Current_Pin);
 
   /* USER CODE BEGIN ADC2_MspDeInit 1 */
 
   /* USER CODE END ADC2_MspDeInit 1 */
+  }
+  else if(adcHandle->Instance==ADC3)
+  {
+  /* USER CODE BEGIN ADC3_MspDeInit 0 */
+
+  /* USER CODE END ADC3_MspDeInit 0 */
+    /* Peripheral clock disable */
+    __HAL_RCC_ADC3_CLK_DISABLE();
+
+  /* USER CODE BEGIN ADC3_MspDeInit 1 */
+
+  /* USER CODE END ADC3_MspDeInit 1 */
   }
 }
 
