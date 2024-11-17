@@ -1,3 +1,6 @@
 [submodule "Libs/longhorn-lib-2025"]
 	path = Libs/longhorn-lib-2025
 	url = https://github.com/LonghornRacingElectric/longhorn-lib-2025.git
+[submodule "Libs/vcu-model-2025"]
+	path = Libs/vcu-model-2025
+	url = https://github.com/LonghornRacingElectric/vcu-model-2025.git
