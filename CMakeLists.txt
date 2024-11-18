@@ -49,7 +49,8 @@ else ()
     add_compile_options(-Og -g)
 endif ()
 
-include_directories(Core/Inc Libs/vcu-model-2025 Libs/longhorn-lib-2025/ Drivers/STM32H7xx_HAL_Driver/Inc Drivers/STM32H7xx_HAL_Driver/Inc/Legacy Drivers/CMSIS/Device/ST/STM32H7xx/Include Drivers/CMSIS/Include)
+include_directories(Core/Inc Libs/longhorn-lib-2025/ Drivers/STM32H7xx_HAL_Driver/Inc Drivers/STM32H7xx_HAL_Driver/Inc/Legacy Drivers/CMSIS/Device/ST/STM32H7xx/Include Drivers/CMSIS/Include)
+add_subdirectory(Libs/vcu-model-2025)
 
 add_definitions(-DDEBUG -DUSE_HAL_DRIVER -DSTM32H733xx)
 
