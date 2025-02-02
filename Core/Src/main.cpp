@@ -125,7 +125,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
     while (1)
     {
-        // test
+        // testing
     /* USER CODE END WHILE */
 //        println("h");
     /* USER CODE BEGIN 3 */
