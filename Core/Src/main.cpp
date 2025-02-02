@@ -31,6 +31,7 @@
 /* USER CODE BEGIN Includes */
 extern "C" {
 #include "usb_vcp.h"
+#include "pdu.h"
 }
 /* USER CODE END Includes */
 
@@ -116,13 +117,15 @@ int main(void)
   MX_UART7_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-
+  PDUData pduData;
+  pdu_init(&pduData);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
     while (1)
     {
+        // test
     /* USER CODE END WHILE */
 //        println("h");
     /* USER CODE BEGIN 3 */
