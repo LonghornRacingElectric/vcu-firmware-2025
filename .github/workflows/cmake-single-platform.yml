@@ -44,7 +44,7 @@ jobs:
       run: ctest -C ${{env.BUILD_TYPE}}
 
     - name: list
-      run: ls
+      run: ls build
 
   tagged-release:
     name: "Release Build"
