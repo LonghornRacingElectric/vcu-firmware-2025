@@ -58,6 +58,8 @@ jobs:
         automatic_release_tag: "latest"
         files: |
           build/*.elf
+          vcu-firmware-2025.elf
+          build/vcu-firmware-2025.elf
 
     
 
