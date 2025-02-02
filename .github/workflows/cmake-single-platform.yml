@@ -43,9 +43,6 @@ jobs:
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: ctest -C ${{env.BUILD_TYPE}}
 
-    - name: list
-      run: ls build
-
     - uses: "marvinpinto/action-automatic-releases@latest"
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
@@ -53,6 +50,8 @@ jobs:
         automatic_release_tag: "testing"
         files: |
           build/*.elf
+          build/*.bin
+          build/*.hex
           vcu-firmware-2025.elf
           build/vcu-firmware-2025.elf
 
