@@ -57,7 +57,7 @@ jobs:
         prerelease: false
         automatic_release_tag: "latest"
         files: |
-          *.elf
+          build/*.elf
 
     
 
