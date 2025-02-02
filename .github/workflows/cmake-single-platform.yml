@@ -46,11 +46,6 @@ jobs:
     - name: list
       run: ls build
 
-  tagged-release:
-    name: "Release Build"
-    runs-on: "ubuntu-latest"
-    needs: build
-    steps:
     - uses: "marvinpinto/action-automatic-releases@latest"
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
@@ -60,6 +55,21 @@ jobs:
           build/*.elf
           vcu-firmware-2025.elf
           build/vcu-firmware-2025.elf
+
+  # tagged-release:
+  #   name: "Release Build"
+  #   runs-on: "ubuntu-latest"
+  #   needs: build
+  #   steps:
+  #   - uses: "marvinpinto/action-automatic-releases@latest"
+  #     with:
+  #       repo_token: "${{ secrets.GITHUB_TOKEN }}"
+  #       prerelease: false
+  #       automatic_release_tag: "latest"
+  #       files: |
+  #         build/*.elf
+  #         vcu-firmware-2025.elf
+  #         build/vcu-firmware-2025.elf
 
     
 
