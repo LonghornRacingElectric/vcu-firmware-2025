@@ -4,11 +4,9 @@ name: CMake on a single platform
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "main" ]
     tags: 
       - "v*"
-  pull_request:
-    branches: [ "master" ]
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
@@ -47,7 +45,7 @@ jobs:
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         prerelease: false
-        automatic_release_tag: "testing"
+        # automatic_release_tag: "testing"
         files: |
           build/*.elf
           build/*.bin
