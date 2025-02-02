@@ -20,6 +20,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - uses: carlosperate/arm-none-eabi-gcc-action@v1
+    - run: arm-none-eabi-gcc --version
     - uses: actions/checkout@v4
 
     - name: Configure CMake
