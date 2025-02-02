@@ -29,7 +29,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+extern "C" {
 #include "usb_vcp.h"
+}
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -122,7 +124,7 @@ int main(void)
     while (1)
     {
     /* USER CODE END WHILE */
-        println(1, "h");
+//        println("h");
     /* USER CODE BEGIN 3 */
     }
   /* USER CODE END 3 */
