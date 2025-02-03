@@ -1,10 +1,7 @@
-# This starter workflow is for a CMake project running on a single platform. There is a different starter workflow if you need cross-platform coverage.
-# See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-multi-platform.yml
-name: CMake on a single platform
+name: Build and Release Firmware
 
 on:
   push:
-    branches: [ "master", "main" ]
     tags: 
       - "v*"
 
@@ -45,28 +42,8 @@ jobs:
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         prerelease: false
-        # automatic_release_tag: "testing"
+        # automatic_release_tag: "Unnamed"
         files: |
           build/*.elf
           build/*.bin
           build/*.hex
-          vcu-firmware-2025.elf
-          build/vcu-firmware-2025.elf
-
-  # tagged-release:
-  #   name: "Release Build"
-  #   runs-on: "ubuntu-latest"
-  #   needs: build
-  #   steps:
-  #   - uses: "marvinpinto/action-automatic-releases@latest"
-  #     with:
-  #       repo_token: "${{ secrets.GITHUB_TOKEN }}"
-  #       prerelease: false
-  #       automatic_release_tag: "latest"
-  #       files: |
-  #         build/*.elf
-  #         vcu-firmware-2025.elf
-  #         build/vcu-firmware-2025.elf
-
-    
-
