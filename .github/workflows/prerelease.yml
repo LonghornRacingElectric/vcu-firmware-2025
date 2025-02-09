@@ -44,7 +44,7 @@ jobs:
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         prerelease: true
-        automatic_release_tag: "Prerelease ${{ steps.extract_branch.outputs.branch }}"
+        automatic_release_tag: "Prerelease_${{ steps.extract_branch.outputs.branch }}"
         files: |
           build/*.elf
           build/*.bin
