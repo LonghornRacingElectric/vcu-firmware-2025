@@ -20,9 +20,12 @@ typedef struct {
 } GPSData;
 
 void setup_gps();
-void receiveData();
+void receiveGPSData();
 bool process_nmea(char *nmea_buffer);
-void parse_data(char *nmea_sentence);
+int send_gps_command(const char *command);
+void calculate_checksum(char *command, char *checksum);
+void parseHeading(char *nmea_sentence);
+void parseCoordinates(char *nmea_sentence);
 
 
 

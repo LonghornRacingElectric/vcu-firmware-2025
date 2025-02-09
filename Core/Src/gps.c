@@ -110,7 +110,7 @@ void setup_gps() { //call in main outside loop
 char buffer[NMEA_BUFFER_SIZE];
 int buffer_index = 0;
 
-void receiveData() { // call in main, put in loop
+void receiveGPSData() { // call in main, put in loop
     memset(buffer, 0, sizeof(buffer)); //clear buffer
     uint8_t startChar;
     if (HAL_UART_Receive(&huart7, &startChar, 1, 100) == HAL_OK){
