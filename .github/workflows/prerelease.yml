@@ -1,4 +1,4 @@
-name: Build and Release Firmware
+name: Build and Pre-Release Firmware
 
 on:
   pull_request:
