@@ -1,8 +1,6 @@
 name: Build and Pre-Release Firmware
 
-on:
-  pull_request:
-    branches: [ "master", "main" ]
+on: push
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
@@ -37,11 +35,16 @@ jobs:
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: ctest -C ${{env.BUILD_TYPE}}
 
+    - name: Extract branch name
+      shell: bash
+      run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+      id: extract_branch
+
     - uses: "marvinpinto/action-automatic-releases@latest"
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         prerelease: true
-        # automatic_release_tag: "Prerelease"
+        automatic_release_tag: "Prerelease ${{ steps.extract_branch.outputs.branch }}"
         files: |
           build/*.elf
           build/*.bin
