@@ -131,3 +131,7 @@ Debug/
 *.DS_Store
 
 build
+.run/vcu-firmware-2025.elf.run.xml
+.run/vcu-firmware-2025.elf.run.xml
+.run/
+sil/
