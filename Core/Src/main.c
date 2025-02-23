@@ -122,49 +122,22 @@ int main(void)
   PDUData pduData;
   pdu_init(&pduData);
     led_init();
-    VcuInput inputs = {.apps1 = 0.3f, .apps2 = 0.3f, .bse = 1.0f, .driveSwitch = 1};
+    VcuInput inputs = {.apps1 = 0.5f, .apps2 = 0.5f, .bse = 0, .driveSwitch = 0};
     VcuOutput outputs = {};
     VcuModel vcu = {};
-    Lookup1D lookup;
-    Lookup1D_init(&lookup, 1.0f, 230.0f);
-    VcuParameters params;
-    params.mapPedalToTorqueRequest = lookup;
-    params.stomppAppsCutoffThreshold = 0.25f;
-    params.stomppAppsRecoveryThreshold = 0.05f;
-    params.stomppMechanicalBrakesThreshold = 0.1f;
-    VcuModel_setParameters(&vcu, &params);
-
-    Stompp stompp;
-    Stompp_reset(&stompp);
-    vcu.stompp = stompp;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
     while (1)
     {
-        inputs.apps1 = inputs.apps1 + 0.01f;
-        inputs.apps2 = inputs.apps2 + 0.01f;
-
-        if(inputs.apps1 > 1) {
-            inputs.apps1 = 0.0f;
-            inputs.apps2 = 0.0f;
-        }
-
-//        int rs = rand();
-
-        inputs.driveSwitch = !inputs.driveSwitch;
-
-        inputs.bse = (inputs.bse == 1.0f) ? 0.0f : 1.0f;
-
         led_rainbow(0.00003f);
         pduData.switches.green_status_light = 1;
         pduData.switches.battery_fans = 1;
         pdu_periodic(&pduData);
-        usb_printf("\nApps 1: %f, Apps 2: %f, BSE: %f, Drive Switch: %i", inputs.apps1, inputs.apps2, inputs.bse, inputs.driveSwitch);
-        usb_printf("STOMPP %i", vcu.stomppOutput.ok);
         VcuModel_evaluate(&vcu, &inputs, &outputs, 0.001f);
-        usb_printf("Inverter request x2: %f", outputs.ineverterTorqueRequests);
+        usb_printf("Inverter request: %f", outputs.ineverterTorqueRequests);
+        println("MY ANUS");
         /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
