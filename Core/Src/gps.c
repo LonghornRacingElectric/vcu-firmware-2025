@@ -104,12 +104,9 @@ void setup_gps() { //call in main outside loop
     if (status != HAL_OK){
         return;
     }
-
 }
 
 char buffer[NMEA_BUFFER_SIZE];
-int buffer_index = 0;
-
 void receiveGPSData() { // call in main, put in loop
     memset(buffer, 0, sizeof(buffer)); //clear buffer
     uint8_t startChar;
