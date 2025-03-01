@@ -121,7 +121,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   PDUData pduData;
   pdu_init(&pduData);
-    led_init();
+    led_init(TIM5, &htim5);
     Lookup1D lookup;
     Lookup1D_init(&lookup, 1.0f, 230.0f);
     VCUModelParameters params ={
