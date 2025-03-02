@@ -64,7 +64,7 @@
 
 #define USBD_VID     1155
 #define USBD_LANGID_STRING     1033
-#define USBD_MANUFACTURER_STRING     "Longhorn Racing Electric (ELC)"
+#define USBD_MANUFACTURER_STRING     "Longhorn Racing Electric"
 #define USBD_PID_HS     22336
 #define USBD_PRODUCT_STRING_HS     "Vehicle Control Unit"
 #define USBD_CONFIGURATION_STRING_HS     "CDC Config"
