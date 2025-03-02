@@ -35,6 +35,7 @@
 #include "pdu.h"
 #include "led.h"
 #include "VcuModel.h"
+#include "dfu.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -68,9 +69,6 @@ static void MPU_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-#ifndef SELF_BOOT_DFU
-#define SELF_BOOT_DFU
-#endif
 
 /* USER CODE END 0 */
 
@@ -127,9 +125,14 @@ int main(void)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
   PDUData pduData;
+
+  /* Initialize Structures/Systems */
   pdu_init(&pduData);
-    led_init(TIM15, &htim15, 2);
-    Lookup1D lookup;
+  led_init(TIM15, &htim15, 2);
+  dfu_init(GPIOA, GPIO_PIN_15);
+  Lookup1D lookup;
+
+
     Lookup1D_init(&lookup, 1.0f, 230.0f);
     VCUModelParameters params ={
             .torque = {

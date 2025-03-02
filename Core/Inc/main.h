@@ -31,7 +31,10 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#define REVA
+#define REVB
+#ifndef SELF_BOOT_DFU
+#define SELF_BOOT_DFU
+#endif
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
