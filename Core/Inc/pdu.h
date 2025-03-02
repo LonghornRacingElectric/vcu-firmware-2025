@@ -18,7 +18,7 @@ typedef struct PDUData {
     } faults;
 
     struct switches {
-        bool rad_fans, cooling_pump_1, cooling_pump_2,
+        float rad_fans, cooling_pump_1, cooling_pump_2,
             brake_light, red_status_light, green_status_light,
             board_power, battery_fans;
     } switches;

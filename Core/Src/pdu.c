@@ -49,7 +49,6 @@
 #define FAULT_BATTERY_FANS_PIN GPIO_PIN_2
 #define SWITCH_BATTERY_FANS_GPIOX GPIOB
 #define SWITCH_BATTERY_FANS_PIN GPIO_PIN_15
-#define TIM_BATTERY_FANS_PIN 
 
 #define FAULT_RAD_FANS_GPIOX GPIOD
 #define FAULT_RAD_FANS_PIN GPIO_PIN_10
@@ -106,14 +105,14 @@ void pdu_init(PDUData *pduData) {
     pduData->currents.green_status_light = 0;
     pduData->currents.red_status_light = 0;
 
-    pduData->switches.battery_fans = 0;
-    pduData->switches.rad_fans = 0;
-    pduData->switches.board_power = 1; // turn on all boards
-    pduData->switches.brake_light = 1; // flash brake light on startup
-    pduData->switches.cooling_pump_1 = 0;
-    pduData->switches.cooling_pump_2 = 0;
-    pduData->switches.green_status_light = 1; // flash
-    pduData->switches.red_status_light = 1; // flash
+    pduData->switches.battery_fans = 0.0f;
+    pduData->switches.rad_fans = 0.0f;
+    pduData->switches.board_power = 1.0f; // turn on all boards
+    pduData->switches.brake_light = 1.0f; // flash brake light on startup
+    pduData->switches.cooling_pump_1 = 0.0f;
+    pduData->switches.cooling_pump_2 = 0.0f;
+    pduData->switches.green_status_light = 1.0f; // flash
+    pduData->switches.red_status_light = 1.0f; // flash
 
 //    HAL_TIM_PWM_Start()
 

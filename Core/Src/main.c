@@ -167,7 +167,7 @@ int main(void)
 
     // set up the vcu model with the parameters
     VCUModel_set_parameters(&params);
-
+    HAL_TIM_PWM_Start(&htim12, TIM_CHANNEL_2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -182,6 +182,7 @@ int main(void)
         usb_printf("STOMPP %i", outputs.stompp.output);
         VCUModel_evaluate(&inputs, &outputs, 0.001f);
         usb_printf("Inverter request: %f", outputs.torque.torqueRequest);
+        TIM12->CCR1 = 10; /* Testing switching pwm */
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
