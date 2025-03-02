@@ -126,9 +126,9 @@ int main(void)
   /* USER CODE BEGIN 2 */
   PDUData pduData;
 
-  /* Initialize Structures/Systems */
+  /* Initialize Structures/Subsystems */
   pdu_init(&pduData);
-  led_init(TIM15, &htim15, 2);
+  led_init(TIM15, &htim15, 2); // missing a channel on the vcu
   dfu_init(GPIOA, GPIO_PIN_15);
   Lookup1D lookup;
 
