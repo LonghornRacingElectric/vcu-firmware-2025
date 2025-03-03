@@ -127,13 +127,10 @@ int main(void)
   PDUData pduData;
 
   /* Initialize Structures/Subsystems */
-  pdu_init(&pduData);
+//  pdu_init(&pduData);
   led_init(TIM15, &htim15, 2); // missing a channel on the vcu
   dfu_init(GPIOA, GPIO_PIN_15);
-  Lookup1D lookup;
 
-
-    Lookup1D_init(&lookup, 1.0f, 230.0f);
     VCUModelParameters params ={
             .torque = {
                     .mapPedalToTorqueRequest = {
@@ -167,22 +164,25 @@ int main(void)
 
     // set up the vcu model with the parameters
     VCUModel_set_parameters(&params);
-    HAL_TIM_PWM_Start(&htim12, TIM_CHANNEL_2);
+//    HAL_TIM_PWM_Start(&htim12, TIM_CHANNEL_2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+    HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, GPIO_PIN_SET);
     while (1)
     {
         led_rainbow(0.00003f);
         pduData.switches.green_status_light = 1;
         pduData.switches.battery_fans = 1;
-        pdu_periodic(&pduData);
-        usb_printf("\nApps 1: %f, Apps 2: %f, BSE: %f", inputs.apps.pedal2Percent, inputs.apps.pedal2Percent, inputs.stompp.bse_percent);
-        usb_printf("STOMPP %i", outputs.stompp.output);
+//        pdu_periodic(&pduData);
+//        usb_printf("\nApps 1: %f, Apps 2: %f, BSE: %f", inputs.apps.pedal2Percent, inputs.apps.pedal2Percent, inputs.stompp.bse_percent);
+//        usb_printf("STOMPP %i", outputs.stompp.output);
         VCUModel_evaluate(&inputs, &outputs, 0.001f);
-        usb_printf("Inverter request: %f", outputs.torque.torqueRequest);
-        TIM12->CCR1 = 10; /* Testing switching pwm */
+//        println("Running");
+        receive_periodic();
+//        usb_printf("Inverter request: %f", outputs.torque.torqueRequest);
+//        TIM12->CCR1 = 10; /* Testing switching pwm */
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
