@@ -35,6 +35,10 @@ extern "C" {
 #ifndef SELF_BOOT_DFU
 #define SELF_BOOT_DFU
 #endif
+
+#ifndef USB_VCP
+#define USB_VCP
+#endif
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
