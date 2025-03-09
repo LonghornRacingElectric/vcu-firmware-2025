@@ -154,8 +154,6 @@ void pdu_init(PDUData *pduData) {
     HAL_TIM_PWM_Start(&PWM_GREEN_STATUS_TIM, TIM_GREEN_STATUS_CH);
     HAL_TIM_PWM_Start(&PWM_RED_STATUS_TIM, TIM_RED_STATUS_CH);
 
-
-
     init = true;
 }
 

@@ -191,6 +191,13 @@ int main(void)
         usb_printf("BSPD outputs were: hard braking: %d, motor 5kw: %d, error: %d, trigger: %d, latch: %d",
                    bspd.hard_braking, bspd.motor_5kw, bspd.error, bspd.trigger, bspd.latch);
 
+        pduData.switches.brake_light = outputs.brake_light.lightOn * 40;
+
+        if(bspd.trigger) {
+            pduData.switches.cooling_pump_1 = 0.0f;
+        } else {
+            pduData.switches.cooling_pump_1 = 50.0f; // percent
+        }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
