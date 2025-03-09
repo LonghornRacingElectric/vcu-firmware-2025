@@ -184,12 +184,13 @@ int main(void)
 //        pdu_periodic(&pduData);
 
 
-
         VCUModel_evaluate(&inputs, &outputs, 0.001f);
         receive_periodic();
         bspd_periodic(bspdaddr);
 
-        usb_printf("BSPD outputs were: hard braking: %d, motor 5kw: %d, error: %d, trigger: %d, latch: %d", bspd.hard_braking, bspd.motor_5kw, bspd.error, bspd.trigger, bspd.latch);
+        usb_printf("BSPD outputs were: hard braking: %d, motor 5kw: %d, error: %d, trigger: %d, latch: %d",
+                   bspd.hard_braking, bspd.motor_5kw, bspd.error, bspd.trigger, bspd.latch);
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -323,10 +324,12 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
     /* User can add his own implementation to report the HAL error return state */
-    __disable_irq();
+//    __disable_irq();
     while (1)
     {
-//        led_set(255, 0, 0 );
+        led_set(255, 0, 0 );
+
+        receive_periodic();
     }
   /* USER CODE END Error_Handler_Debug */
 }

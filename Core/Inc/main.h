@@ -124,8 +124,8 @@ void Error_Handler(void);
 #define PWM7_GPIO_Port GPIOD
 #define PWM6_Pin GPIO_PIN_6
 #define PWM6_GPIO_Port GPIOC
-#define PWM5_Pin GPIO_PIN_7
-#define PWM5_GPIO_Port GPIOC
+#define BattPumpPWM_Pin GPIO_PIN_7
+#define BattPumpPWM_GPIO_Port GPIOC
 #define PWM4_Pin GPIO_PIN_8
 #define PWM4_GPIO_Port GPIOC
 #define PWM3_Pin GPIO_PIN_9

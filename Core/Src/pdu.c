@@ -3,6 +3,7 @@
 //
 
 #include "pdu.h"
+#include "tim.h"
 
 #ifdef REVA
 #define FAULT_BATTERY_FANS_GPIOX GPIOE
@@ -114,8 +115,7 @@ void pdu_init(PDUData *pduData) {
     pduData->switches.green_status_light = 1.0f; // flash
     pduData->switches.red_status_light = 1.0f; // flash
 
-//    HAL_TIM_PWM_Start()
-
+    HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_2); // just testing battery pump
     init = true;
 }
 
@@ -129,6 +129,7 @@ void pdu_periodic(PDUData *pduData) {
     checkPDUFaults(pduData);
     checkPDUCurrents(pduData);
 
+    htim8.Instance->CCR2 = pduData->switches.cooling_pump_1 * htim8.Instance->ARR; // testing with percentages
     // write out data to the CAN bus
 //    writePDUToCAN(pduData);
 }
