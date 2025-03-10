@@ -4,6 +4,7 @@
 
 #include "pdu.h"
 #include "tim.h"
+#include "usb_vcp.h"
 
 #ifdef REVA
 #define FAULT_BATTERY_FANS_GPIOX GPIOE
@@ -60,9 +61,13 @@
 #define SWITCH_RAD_FANS_GPIOX GPIOC
 #define SWITCH_RAD_FANS_PIN GPIO_PIN_8
 
-#define PWM_RADIATOR_FANS_TIM htim8
-#define PWM_RADIATOR_FANS CCR3
+#define PWR_RADIATOR_FANS_TIM htim8
+#define PWR_RADIATOR_FANS CCR3
 #define TIM_RADIATOR_FANS_CH TIM_CHANNEL_3
+
+#define PWM_RADIATOR_FANS_TIM htim12
+#define PWM_RADIATOR_FANS CCR1
+#define PWM_RADIATOR_FANS_CH TIM_CHANNEL_1
 
 #define FAULT_BOARD_POWER_GPIOX GPIOD
 #define FAULT_BOARD_POWER_PIN GPIO_PIN_9
@@ -145,21 +150,23 @@ void pdu_init(PDUData *pduData) {
 
     /* Cooling */
     HAL_TIM_PWM_Start(&PWM_COOLING_PUMP_1, TIM_COOLING_PUMP_1_INIT_CH);
-    HAL_TIM_PWM_Start(&PWM_COOLING_PUMP_2, TIM_COOLING_PUMP_2_INIT_CH);
+//    HAL_TIM_PWM_Start(&PWM_COOLING_PUMP_2, TIM_COOLING_PUMP_2_INIT_CH);
     HAL_TIM_PWM_Start(&PWM_BATTERY_FANS_TIM, TIM_BATTERY_FANS_CH);
-    HAL_TIM_PWM_Start(&PWM_RADIATOR_FANS_TIM, TIM_RADIATOR_FANS_CH);
+    HAL_TIM_PWM_Start(&PWR_RADIATOR_FANS_TIM, TIM_RADIATOR_FANS_CH);
+    HAL_TIM_PWM_Start(&PWM_RADIATOR_FANS_TIM, PWM_RADIATOR_FANS_CH);
+
 
     /* Lights */
     HAL_TIM_PWM_Start(&PWM_BRAKE_LIGHT_TIM, TIM_BRAKE_LIGHT_CH);
     HAL_TIM_PWM_Start(&PWM_GREEN_STATUS_TIM, TIM_GREEN_STATUS_CH);
     HAL_TIM_PWM_Start(&PWM_RED_STATUS_TIM, TIM_RED_STATUS_CH);
 
-    init = true;
+    pduData->init = true;
 }
 
 
 void pdu_periodic(PDUData *pduData) {
-    if(!init) pdu_init(pduData); // safety for dumb programming mistakes
+    if(!pduData->init) pdu_init(pduData); // safety for dumb programming mistakes
     // most critical -- write the data out to the pins
     setPDUSwitches(pduData);
 
@@ -170,16 +177,18 @@ void pdu_periodic(PDUData *pduData) {
 
     /* Update PWM on all signals */
     /* Cooling */
-    PWM_COOLING_PUMP_1.Instance->PWM_COOLING_PUMP_CH = (uint32_t) pduData->switches.cooling_pump_1 * PWM_COOLING_PUMP_1.Instance->ARR; // testing with percentages
-    PWM_COOLING_PUMP_2.Instance->PWM_COOLING_PUMP_2_CH = (uint32_t) pduData->switches.cooling_pump_2 * PWM_COOLING_PUMP_1.Instance->ARR; // testing with percentages
+    PWM_COOLING_PUMP_1.Instance->PWM_COOLING_PUMP_CH =  pduData->switches.cooling_pump_1 * PWM_COOLING_PUMP_1.Instance->ARR; // testing with percentages
+//    PWM_COOLING_PUMP_2.Instance->PWM_COOLING_PUMP_2_CH =  pduData->switches.cooling_pump_2 * PWM_COOLING_PUMP_1.Instance->ARR; // testing with percentages
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
+    PWM_BATTERY_FANS_TIM.Instance->PWM_BATTERY_FANS = pduData->switches.battery_fans * PWM_BATTERY_FANS_TIM.Instance->ARR;
+    PWR_RADIATOR_FANS_TIM.Instance->PWR_RADIATOR_FANS = 1.0f * PWR_RADIATOR_FANS_TIM.Instance->ARR;
 
-    PWM_BATTERY_FANS_TIM.Instance->PWM_BATTERY_FANS = (uint32_t) pduData->switches.battery_fans * PWM_BATTERY_FANS_TIM.Instance->ARR;
-    PWM_RADIATOR_FANS_TIM.Instance->PWM_RADIATOR_FANS = (uint32_t) pduData->switches.battery_fans * PWM_RADIATOR_FANS_TIM.Instance->ARR;
+    PWM_RADIATOR_FANS_TIM.Instance->PWM_RADIATOR_FANS = pduData->switches.rad_fans * PWM_RADIATOR_FANS_TIM.Instance->ARR;
 
     /* Lights */
-    PWM_BRAKE_LIGHT_TIM.Instance->PWM_BRAKE_LIGHT = (uint32_t) pduData->switches.brake_light * PWM_BRAKE_LIGHT_TIM.Instance->ARR;
-    PWM_GREEN_STATUS_TIM.Instance->PWM_GREEN_STATUS = (uint32_t) pduData->switches.green_status_light * PWM_GREEN_STATUS_TIM.Instance->ARR;
-    PWM_RED_STATUS_TIM.Instance->PWM_RED_STATUS = (uint32_t) pduData->switches.red_status_light * PWM_RED_STATUS_TIM.Instance->ARR;
+    PWM_BRAKE_LIGHT_TIM.Instance->PWM_BRAKE_LIGHT = pduData->switches.brake_light * PWM_BRAKE_LIGHT_TIM.Instance->ARR;
+    PWM_GREEN_STATUS_TIM.Instance->PWM_GREEN_STATUS =  pduData->switches.green_status_light * PWM_GREEN_STATUS_TIM.Instance->ARR;
+    PWM_RED_STATUS_TIM.Instance->PWM_RED_STATUS = pduData->switches.red_status_light * PWM_RED_STATUS_TIM.Instance->ARR;
     // write out data to the CAN bus
 //    writePDUToCAN(pduData);
 }

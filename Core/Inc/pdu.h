@@ -28,6 +28,8 @@ typedef struct PDUData {
             brake_light, red_status_light, green_status_light,
             board_power, battery_fans;
     } currents;
+
+    bool init;
 } PDUData;
 
 void pdu_init(PDUData *data);

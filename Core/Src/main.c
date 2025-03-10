@@ -126,7 +126,7 @@ int main(void)
   MX_UART7_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-  PDUData pduData;
+  PDUData pduData = {};
   BSPDOutputs bspd;
   BSPDOutputs *bspdaddr = &bspd;
 
@@ -136,7 +136,7 @@ int main(void)
   dfu_init(GPIOA, GPIO_PIN_15);
   lib_timer_init();
 
-    VCUModelParameters params ={
+    VCUModelParameters params = {
             .torque = {
                     .mapPedalToTorqueRequest = {
                             .x0 = 0.0f,
@@ -175,31 +175,48 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
     HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, GPIO_PIN_SET);
+    HAL_LPTIM_Init(&hlptim2);
+    HAL_LPTIM_Counter_Start(&hlptim2, hlptim2.Instance->ARR);
+
     while (1)
     {
         uint32_t curtime = lib_timer_ms_elapsed();
         led_rainbow(curtime / 1000.0f);
         pduData.switches.green_status_light = 1;
         pduData.switches.battery_fans = 1;
-//        pdu_periodic(&pduData);
+        pdu_periodic(&pduData);
 
 
         VCUModel_evaluate(&inputs, &outputs, 0.001f);
         receive_periodic();
         bspd_periodic(bspdaddr);
 
-        usb_printf("BSPD outputs were: hard braking: %d, motor 5kw: %d, error: %d, trigger: %d, latch: %d",
-                   bspd.hard_braking, bspd.motor_5kw, bspd.error, bspd.trigger, bspd.latch);
+//        usb_printf("BSPD outputs were: hard braking: %d, motor 5kw: %d, error: %d, trigger: %d, latch: %d",
+//                   bspd.hard_braking, bspd.motor_5kw, bspd.error, bspd.trigger, bspd.latch);
 
         pduData.switches.brake_light = (float) outputs.brake_light.lightOn * 40;
+        uint32_t tach = HAL_LPTIM_ReadCounter(&hlptim2);
+        float rpm = tach / 30.0f;
+
+        usb_printf("Tach info: %i, RPM: %f", tach, rpm);
 
         if(bspd.trigger) {
-            pduData.switches.cooling_pump_1 = 0.0f;
-            pduData.switches.cooling_pump_2 = 0.0f;
+            pduData.switches.cooling_pump_1 = 0.2f;
+            pduData.switches.cooling_pump_2 = 0.2f;
+            pduData.switches.battery_fans = 0.00f;
+            pduData.switches.rad_fans = 0.00f;
+            pduData.switches.cooling_pump_1 = 0.00f;
+            pduData.switches.cooling_pump_2 = 0.00f;
         } else {
-            pduData.switches.cooling_pump_1 = 50.0f; // percent
-            pduData.switches.cooling_pump_2 = 50.0f;
+            pduData.switches.cooling_pump_1 = 0.8f; // percent
+            pduData.switches.cooling_pump_2 = 0.8f;
+            pduData.switches.battery_fans = 1.0f;
+            pduData.switches.rad_fans = 1.0f-0.0f;
+            pduData.switches.cooling_pump_1 = 1.00f;
+            pduData.switches.cooling_pump_2 = 1.00f;
         }
+
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

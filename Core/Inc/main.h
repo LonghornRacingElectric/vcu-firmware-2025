@@ -128,8 +128,6 @@ void Error_Handler(void);
 #define BattPumpPWM_GPIO_Port GPIOC
 #define PWM4_Pin GPIO_PIN_8
 #define PWM4_GPIO_Port GPIOC
-#define PWM3_Pin GPIO_PIN_9
-#define PWM3_GPIO_Port GPIOC
 #define TACH3_Pin GPIO_PIN_8
 #define TACH3_GPIO_Port GPIOA
 #define SW_boards_Pin GPIO_PIN_9
