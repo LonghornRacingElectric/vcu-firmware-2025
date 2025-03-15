@@ -141,8 +141,8 @@ int main(void)
 //  pdu_init(&pduData);
   led_init(TIM15, &htim15, 2); // missing a channel on the vcu
   dfu_init(GPIOA, GPIO_PIN_15);
-    HAL_ADC_Start_DMA(&hadc1, ADC1_BUFFER, 14);
-    HAL_ADC_Start_DMA(&hadc3, ADC3_BUFFER, 2);
+    HAL_ADC_Start_DMA(&hadc1, (uint32_t *) ADC1_BUFFER, 14);
+    HAL_ADC_Start_DMA(&hadc3, (uint32_t *) ADC3_BUFFER, 2);
   lib_timer_init();
 
     VCUModelParameters params = {
@@ -213,13 +213,11 @@ int main(void)
 //        }
 
         if(isFinished) {
-//            for (int i = 0; i < 14; i++) {
-////                if(i == 1 || i == 0)
-//                usb_printf("ADC 1: Data at %d, value: %d", i, ADC1_BUFFER[i]);
-//            }
+            for (int i = 0; i < 14; i++) {
+                usb_printf("ADC 1: Data at %d, value: %d", i, ADC1_BUFFER[i]);
+            }
 
             for(int i = 0; i < 2; i++) {
-                if(i == 0)
                 usb_printf("ADC 3: Data at %d, value: %d", i, ADC3_BUFFER[i]);
             }
             isFinished = 0;
