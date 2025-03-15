@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
+#include "dma.h"
 #include "fdcan.h"
 #include "lptim.h"
 #include "memorymap.h"
@@ -38,6 +39,7 @@
 #include "dfu.h"
 #include "bspd.h"
 #include "timer.h"
+#include "current_sense.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -71,6 +73,10 @@ static void MPU_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+bool isFinished;
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
+    isFinished = 1;
+}
 
 /* USER CODE END 0 */
 
@@ -109,6 +115,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_ADC1_Init();
   MX_ADC3_Init();
   MX_FDCAN1_Init();
@@ -123,8 +130,8 @@ int main(void)
   MX_TIM15_Init();
   MX_TIM16_Init();
   MX_UART4_Init();
-  MX_UART7_Init();
   MX_USB_DEVICE_Init();
+  MX_UART7_Init();
   /* USER CODE BEGIN 2 */
   PDUData pduData = {};
   BSPDOutputs bspd;
@@ -134,6 +141,8 @@ int main(void)
 //  pdu_init(&pduData);
   led_init(TIM15, &htim15, 2); // missing a channel on the vcu
   dfu_init(GPIOA, GPIO_PIN_15);
+    HAL_ADC_Start_DMA(&hadc1, ADC1_BUFFER, 14);
+    HAL_ADC_Start_DMA(&hadc3, ADC3_BUFFER, 2);
   lib_timer_init();
 
     VCUModelParameters params = {
@@ -174,10 +183,12 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
     HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, GPIO_PIN_SET);
     HAL_LPTIM_Init(&hlptim2);
+    usb_printf("Setting up the LTPIM counter");
     HAL_LPTIM_Counter_Start(&hlptim2, hlptim2.Instance->ARR);
-
+    usb_printf("Just setup the timer");
     while (1)
     {
         uint32_t curtime = lib_timer_ms_elapsed();
@@ -195,10 +206,28 @@ int main(void)
 //                   bspd.hard_braking, bspd.motor_5kw, bspd.error, bspd.trigger, bspd.latch);
 
         pduData.switches.brake_light = (float) outputs.brake_light.lightOn * 40;
+
+//        if(isFinished) {
+//            usb_printf("Motor current sense: %d", ADC1_BUFFER[9]);
+//            isFinished = 0;
+//        }
+
+        if(isFinished) {
+//            for (int i = 0; i < 14; i++) {
+////                if(i == 1 || i == 0)
+//                usb_printf("ADC 1: Data at %d, value: %d", i, ADC1_BUFFER[i]);
+//            }
+
+            for(int i = 0; i < 2; i++) {
+                if(i == 0)
+                usb_printf("ADC 3: Data at %d, value: %d", i, ADC3_BUFFER[i]);
+            }
+            isFinished = 0;
+        }
         uint32_t tach = HAL_LPTIM_ReadCounter(&hlptim2);
         float rpm = tach / 30.0f;
 
-        usb_printf("Tach info: %i, RPM: %f", tach, rpm);
+//        usb_printf("Tach info: %i, RPM: %f", tach, rpm);
 
         if(bspd.trigger) {
             pduData.switches.cooling_pump_1 = 0.2f;
