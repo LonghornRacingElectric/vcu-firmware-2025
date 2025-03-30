@@ -7,6 +7,7 @@
 #include "stdbool.h"
 #include "gpio.h"
 
+static bool init = false;
 
 // Can be turned into 1 unsigned integer bitmap if needing to save memory (24B -> 4B)
 typedef struct PDUData {
@@ -17,7 +18,7 @@ typedef struct PDUData {
     } faults;
 
     struct switches {
-        bool rad_fans, cooling_pump_1, cooling_pump_2,
+        float rad_fans, cooling_pump_1, cooling_pump_2,
             brake_light, red_status_light, green_status_light,
             board_power, battery_fans;
     } switches;
@@ -27,6 +28,8 @@ typedef struct PDUData {
             brake_light, red_status_light, green_status_light,
             board_power, battery_fans;
     } currents;
+
+    bool init;
 } PDUData;
 
 void pdu_init(PDUData *data);
@@ -34,6 +37,8 @@ void pdu_init(PDUData *data);
 void pdu_periodic(PDUData *data);
 
 void checkPDUFaults(PDUData *data);
+void checkPDUCurrents(PDUData *data);
+void setPDUSwitches(PDUData *data);
 
 void writePDUToCAN(PDUData *data);
 

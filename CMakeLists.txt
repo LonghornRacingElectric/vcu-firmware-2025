@@ -49,14 +49,14 @@ else ()
     add_compile_options(-Og -g)
 endif ()
 
-include_directories(Core/Inc Libs/longhorn-lib-2025/ Drivers/STM32H7xx_HAL_Driver/Inc Drivers/STM32H7xx_HAL_Driver/Inc/Legacy Drivers/CMSIS/Device/ST/STM32H7xx/Include Drivers/CMSIS/Include Libs/longhorn-lib-2025 Middlewares/ST/STM32_USB_Device_Library/Core/Inc Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc USB_DEVICE/App USB_DEVICE/Target)
-add_subdirectory(Libs/vcu-model-2025)
+include_directories(Core/Inc USB_DEVICE/App USB_DEVICE/Target Drivers/STM32H7xx_HAL_Driver/Inc Drivers/STM32H7xx_HAL_Driver/Inc/Legacy Middlewares/ST/STM32_USB_Device_Library/Core/Inc Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc Drivers/CMSIS/Device/ST/STM32H7xx/Include Drivers/CMSIS/Include Core/Inc USB_DEVICE/App USB_DEVICE/Target Drivers/STM32H7xx_HAL_Driver/Inc Drivers/STM32H7xx_HAL_Driver/Inc/Legacy Middlewares/ST/STM32_USB_Device_Library/Core/Inc Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc Drivers/CMSIS/Device/ST/STM32H7xx/Include Drivers/CMSIS/Include Libs/longhorn-lib-2025 Libs/vcu-model-2025/inc USB_DEVICE/App USB_DEVICE/Target Middlewares/ST/STM32_USB_Device_Library/Core/Inc Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc)
 
-add_definitions(-DDEBUG -DUSE_HAL_DRIVER -DSTM32H733xx)
+add_definitions(-DDEBUG -DUSE_HAL_DRIVER -DSTM32H733xx -DDEBUG -DUSE_HAL_DRIVER -DSTM32H733xx)
 
-file(GLOB_RECURSE SOURCES "Core/*.*" "Drivers/*.*" "Libs/longhorn-lib-2025/*.*" "Middlewares/*.*" "USB_DEVICE/*.*")
+file(GLOB_RECURSE SOURCES "Core/*.*" "Middlewares/*.*" "Drivers/*.*" "USB_DEVICE/*.*" "Core/*.*" "Middlewares/*.*" "Drivers/*.*" "USB_DEVICE/*.*" "Libs/longhorn-lib-2025/*.*" "Libs/vcu-model-2025/src/*.*" "Middlewares/*.*" "Drivers/*.*" "USB_DEVICE/*.*")
 
 set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32H733VGTX_FLASH.ld)
+
 add_link_options(-Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
 add_link_options(-mcpu=cortex-m7 -mthumb -mthumb-interwork)
 add_link_options(-T ${LINKER_SCRIPT})

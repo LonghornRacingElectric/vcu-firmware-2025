@@ -1,6 +1,9 @@
 name: Build and Pre-Release Firmware
 
-on: push
+on: 
+  push:
+    tags-ignore:
+      - '**' # The '**' wildcard matches all tag names.
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
@@ -44,7 +47,7 @@ jobs:
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         prerelease: true
-        automatic_release_tag: "${{ steps.extract_branch.outputs.branch }}-Branch-Pre"
+        automatic_release_tag: "${{ steps.extract_branch.outputs.branch }}-Branch-Prerelease"
         files: |
           build/*.elf
           build/*.bin

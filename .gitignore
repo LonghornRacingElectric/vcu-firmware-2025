@@ -131,3 +131,22 @@ Debug/
 *.DS_Store
 
 build
+.run/vcu-firmware-2025.elf.run.xml
+.run/vcu-firmware-2025.elf.run.xml
+.run/
+sil/
+CMakeCache.txt
+cmake_install.cmake
+build.ninja
+.vscode/settings.json
+.ninja_log
+.ninja_deps
+/.cache
+.ninja_deps
+.ninja_log
+build.ninja
+cmake_install.cmake
+
+*.iml
+*.xml
+*.idea/
