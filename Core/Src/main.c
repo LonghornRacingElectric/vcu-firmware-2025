@@ -139,19 +139,16 @@ int main(void)
   BSPDOutputs *bspdaddr = &bspd;
 
   /* Initialize Structures/Subsystems */
-//  pdu_init(&pduData);
+  pdu_init(&pduData);
   led_init(TIM15, &htim15, 2); // missing a channel on the vcu
   dfu_init(GPIOA, GPIO_PIN_15);
-    HAL_ADC_Start_DMA(&hadc1, (uint32_t *) ADC1_BUFFER, 14);
-    HAL_ADC_Start_DMA(&hadc3, (uint32_t *) ADC3_BUFFER, 2);
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t *) ADC1_BUFFER, 14);
+  HAL_ADC_Start_DMA(&hadc3, (uint32_t *) ADC3_BUFFER, 2);
   lib_timer_init();
+  night_can_init(&hfdcan1);
 
     // --- Start the FDCAN peripheral ---
     //     Must be done once after init and before sending the first message
-    if (HAL_FDCAN_Start(&hfdcan1) != HAL_OK)
-    {
-        Error_Handler();
-    }
 
     VCUModelParameters params = {
             .torque = {
@@ -160,7 +157,7 @@ int main(void)
                             .x1 = 1.0f,
                             .y = {},
                             .xP = 1.0f,
-                            .yP = 270.0f
+                            .yP = 230.0f
                     }
             },
             .stompp = {
@@ -172,8 +169,8 @@ int main(void)
                     .sensorInRangeUpperBound = 1.0f,
                     .sensorInRangeLowerBound = 0.0f,
                     .allowedPlausibilityRange = 0.1f,
-                    .appsDeadzoneTopPercent = 0.0f,
-                    .appsDeadzoneBottomPercent = 0.0f,
+                    .appsDeadzoneTopPercent = 0.1f,
+                    .appsDeadzoneBottomPercent = 0.1f,
                     .appsMaxImplausibilityTime = 100.0f,
                     .pedal1Bias = 0.5f,
             },
@@ -209,8 +206,20 @@ int main(void)
         pdu_periodic(&pduData);
 
         if(checkDrive()) {
-            inputs.apps.pedal1Percent = 0.48f;
-            inputs.apps.pedal2Percent = 0.473f;
+            inputs.apps.pedal1Percent = 0.101f;
+            inputs.apps.pedal2Percent = 0.101f;
+
+            ((int16_t*)packet2_data)[0] = outputs.torque.torqueRequest;
+            ((int16_t*)packet2_data)[1] = 0;
+            packet2_data[4] = 1;
+            packet2_data[5] = outputs.torque.torqueRequest > 0 ? 1 : 0;
+            ((int16_t*)packet2_data)[3] = 10;
+
+            HAL_StatusTypeDef status = send_CAN_data(&hfdcan1, 0xDD, FDCAN_DLC_BYTES_4, packet1_data);
+        } else {
+            // need to send CAN packet to say disabled
+            inputs.apps.pedal1Percent = 0.0f;
+            inputs.apps.pedal2Percent = 0.0f;
         }
 
         VCUModel_evaluate(&inputs, &outputs, lib_timer_ms_elapsed()/1000.0f);
@@ -225,21 +234,9 @@ int main(void)
 
         pduData.switches.brake_light = (float) outputs.brake_light.lightOn * 40;
 
-        packet1_data[0] = 0x11;
-        packet1_data[1] = 0x22;
-        packet1_data[2] = 0x33;
-        packet1_data[3] = 0x44;
 
         uint32_t free_level = HAL_FDCAN_GetTxFifoFreeLevel(&hfdcan1);
 
-
-        if (free_level > 0) {
-            // Attempt to send
-            HAL_StatusTypeDef status = send_CAN_data(&hfdcan1, 0xDD, FDCAN_DLC_BYTES_4, packet1_data);
-//            usb_printf("The error status for CAN was 0x%X and FDCan was in this status: 0x%X", status, hfdcan1.State);
-        } else {
-//            usb_printf("Tx FIFO Full, skipping send.");
-        }
 
 //        if(isFinished) {
 //            usb_printf("Motor current sense: %d", ADC1_BUFFER[9]);
