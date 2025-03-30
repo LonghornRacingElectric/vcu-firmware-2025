@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
+#include "dma.h"
 #include "fdcan.h"
 #include "lptim.h"
 #include "memorymap.h"
@@ -38,6 +39,8 @@
 #include "dfu.h"
 #include "bspd.h"
 #include "timer.h"
+#include "current_sense.h"
+#include "night_can.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -71,6 +74,10 @@ static void MPU_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+bool isFinished;
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
+    isFinished = 1;
+}
 
 /* USER CODE END 0 */
 
@@ -109,6 +116,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_ADC1_Init();
   MX_ADC3_Init();
   MX_FDCAN1_Init();
@@ -123,8 +131,8 @@ int main(void)
   MX_TIM15_Init();
   MX_TIM16_Init();
   MX_UART4_Init();
-  MX_UART7_Init();
   MX_USB_DEVICE_Init();
+  MX_UART7_Init();
   /* USER CODE BEGIN 2 */
   PDUData pduData = {};
   BSPDOutputs bspd;
@@ -134,14 +142,25 @@ int main(void)
 //  pdu_init(&pduData);
   led_init(TIM15, &htim15, 2); // missing a channel on the vcu
   dfu_init(GPIOA, GPIO_PIN_15);
+    HAL_ADC_Start_DMA(&hadc1, (uint32_t *) ADC1_BUFFER, 14);
+    HAL_ADC_Start_DMA(&hadc3, (uint32_t *) ADC3_BUFFER, 2);
   lib_timer_init();
+
+    // --- Start the FDCAN peripheral ---
+    //     Must be done once after init and before sending the first message
+    if (HAL_FDCAN_Start(&hfdcan1) != HAL_OK)
+    {
+        Error_Handler();
+    }
 
     VCUModelParameters params = {
             .torque = {
                     .mapPedalToTorqueRequest = {
                             .x0 = 0.0f,
-                            .x1 = 100.0f,
-                            .n = 11,
+                            .x1 = 1.0f,
+                            .y = {},
+                            .xP = 1.0f,
+                            .yP = 270.0f
                     }
             },
             .stompp = {
@@ -164,8 +183,8 @@ int main(void)
             }
     };
 
-    VCUModelInputs inputs;
-    VCUModelOutputs outputs;
+    VCUModelInputs inputs = {};
+    VCUModelOutputs outputs = {};
 
     // set up the vcu model with the parameters
     VCUModel_set_parameters(&params);
@@ -174,10 +193,13 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
     HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, GPIO_PIN_SET);
     HAL_LPTIM_Init(&hlptim2);
     HAL_LPTIM_Counter_Start(&hlptim2, hlptim2.Instance->ARR);
 
+    uint8_t packet1_data[4];
+    uint8_t packet2_data[8];
     while (1)
     {
         uint32_t curtime = lib_timer_ms_elapsed();
@@ -186,19 +208,65 @@ int main(void)
         pduData.switches.battery_fans = 1;
         pdu_periodic(&pduData);
 
+        if(checkDrive()) {
+            inputs.apps.pedal1Percent = 0.48f;
+            inputs.apps.pedal2Percent = 0.473f;
+        }
 
-        VCUModel_evaluate(&inputs, &outputs, 0.001f);
+        VCUModel_evaluate(&inputs, &outputs, lib_timer_ms_elapsed()/1000.0f);
         receive_periodic();
         bspd_periodic(bspdaddr);
+
+        usb_printf("Drive var was: %d, Torque request output was: %f, STOMPP was %d, BSE was %f", checkDrive(),  outputs.torque.torqueRequest, outputs.stompp.output, inputs.stompp.bse_percent);
+
 
 //        usb_printf("BSPD outputs were: hard braking: %d, motor 5kw: %d, error: %d, trigger: %d, latch: %d",
 //                   bspd.hard_braking, bspd.motor_5kw, bspd.error, bspd.trigger, bspd.latch);
 
         pduData.switches.brake_light = (float) outputs.brake_light.lightOn * 40;
+
+        packet1_data[0] = 0x11;
+        packet1_data[1] = 0x22;
+        packet1_data[2] = 0x33;
+        packet1_data[3] = 0x44;
+
+        uint32_t free_level = HAL_FDCAN_GetTxFifoFreeLevel(&hfdcan1);
+
+
+        if (free_level > 0) {
+            // Attempt to send
+            HAL_StatusTypeDef status = send_CAN_data(&hfdcan1, 0xDD, FDCAN_DLC_BYTES_4, packet1_data);
+//            usb_printf("The error status for CAN was 0x%X and FDCan was in this status: 0x%X", status, hfdcan1.State);
+        } else {
+//            usb_printf("Tx FIFO Full, skipping send.");
+        }
+
+//        if(isFinished) {
+//            usb_printf("Motor current sense: %d", ADC1_BUFFER[9]);
+//            isFinished = 0;
+//        }
+
+//        if(isFinished) {
+////            for (int i = 0; i < 14; i++) {
+////
+////                usb_printf("ADC 1: Data at %d, value: %d", i, ADC1_BUFFER[i]);
+////            }
+//
+////            usb_printf("ADC 1: Data at %d, value: %d", 7, ADC1_BUFFER[7]);
+////            usb_printf("ADC 1: Data at %d, value: %d", 6, ADC1_BUFFER[6]);
+//
+////                usb_printf("ADC 1: Data at %d, value: %d", 6, ADC1_BUFFER[6]);
+//
+////            for(int i = 0; i < 2; i++) {
+////                usb_printf("ADC 3: Data at %d, value: %d", i, ADC3_BUFFER[i]);
+////            }
+//
+//            isFinished = 0;
+//        }
         uint32_t tach = HAL_LPTIM_ReadCounter(&hlptim2);
         float rpm = tach / 30.0f;
 
-        usb_printf("Tach info: %i, RPM: %f", tach, rpm);
+//        usb_printf("Tach info: %i, RPM: %f", tach, rpm);
 
         if(bspd.trigger) {
             pduData.switches.cooling_pump_1 = 0.2f;
@@ -292,7 +360,7 @@ void PeriphCommonClock_Config(void)
 
   /** Initializes the peripherals clock
   */
-  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_ADC|RCC_PERIPHCLK_FDCAN;
+  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_ADC;
   PeriphClkInitStruct.PLL2.PLL2M = 16;
   PeriphClkInitStruct.PLL2.PLL2N = 256;
   PeriphClkInitStruct.PLL2.PLL2P = 2;
@@ -301,7 +369,6 @@ void PeriphCommonClock_Config(void)
   PeriphClkInitStruct.PLL2.PLL2RGE = RCC_PLL2VCIRANGE_0;
   PeriphClkInitStruct.PLL2.PLL2VCOSEL = RCC_PLL2VCOMEDIUM;
   PeriphClkInitStruct.PLL2.PLL2FRACN = 0;
-  PeriphClkInitStruct.FdcanClockSelection = RCC_FDCANCLKSOURCE_PLL2;
   PeriphClkInitStruct.AdcClockSelection = RCC_ADCCLKSOURCE_PLL2;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
   {
