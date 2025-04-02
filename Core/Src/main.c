@@ -197,9 +197,10 @@ int main(void)
     HAL_LPTIM_Init(&hlptim2);
     HAL_LPTIM_Counter_Start(&hlptim2, hlptim2.Instance->ARR);
 
-    NightCANPacket torqueCommand = inverter_init(&can1, 0, 10.0f);
+    NightCANPacket *torqueCommand = inverter_init(&can1, 0, 10.0f);
 
     NightCANReceivePacket test = CAN_create_receive_packet(0xBB, 0, 8);
+    CAN_addReceivePacket(&can1, &test);
 
     while (1)
     {
@@ -235,7 +236,7 @@ int main(void)
 
         if(test.is_recent) {
             printf("The test packet was received with the first byte of data being: 0x%X", test.data[0]);
-            test.is_recent = false;
+            CAN_consume_packet(&test);
         }
 
         uint32_t tach = HAL_LPTIM_ReadCounter(&hlptim2);

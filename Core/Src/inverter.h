@@ -7,7 +7,7 @@
 
 #include "night_can.h"
 
-NightCANPacket inverter_init(NightCANInstance *can, uint8_t initial_direction, float torque_limit);
+NightCANPacket *inverter_init(NightCANInstance *can, uint8_t initial_direction, float torque_limit);
 void inverter_update_torque_request(float torque_request);
 
 void inverter_update_all_fields(float torque_request, float speed_request, uint8_t direction,

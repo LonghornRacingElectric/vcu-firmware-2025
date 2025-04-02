@@ -34,14 +34,14 @@ void inverter_update_all_fields(float torque_request, float speed_request, uint8
     updateInverterTorqueLimit(torque_limit);
 }
 
-NightCANPacket inverter_init(NightCANInstance *can, uint8_t initial_direction, float torque_limit) {
+NightCANPacket *inverter_init(NightCANInstance *can, uint8_t initial_direction, float torque_limit) {
     torqueCommand = CAN_create_packet(0xC0, 3, 8);
 
     inverter_update_all_fields(0.0f, 0.0f, initial_direction, 0, torque_limit);
 
     CAN_AddTxPacket(can, &torqueCommand);
 
-    return torqueCommand;
+    return &torqueCommand;
 };
 
 void inverter_update_torque_request(float torque_request) {
