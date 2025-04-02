@@ -27,6 +27,7 @@
 #include "usart.h"
 #include "usb_device.h"
 #include "gpio.h"
+#include "inverter.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -147,12 +148,9 @@ int main(void)
   HAL_ADC_Start_DMA(&hadc3, (uint32_t *) ADC3_BUFFER, 2);
   lib_timer_init();
 
-    NightCANDriverInstance can1 = {};
+    NightCANInstance can1 = {};
     CAN_Init( &can1, &hfdcan1, 0, 0xFF);
 
-
-    // --- Start the FDCAN peripheral ---
-    //     Must be done once after init and before sending the first message
 
     VCUModelParameters params = {
             .torque = {
@@ -199,29 +197,7 @@ int main(void)
     HAL_LPTIM_Init(&hlptim2);
     HAL_LPTIM_Counter_Start(&hlptim2, hlptim2.Instance->ARR);
 
-    NightCANPacket packet1;
-    packet1.tx_interval_ms = 0;
-    packet1.id = 0xDD;
-    packet1.dlc = 8;
-    packet1.data[0] = 0x48;
-
-    NightCANPacket torqueCommand;
-    torqueCommand.tx_interval_ms = 3;
-    torqueCommand.id = 0x0C0;
-    torqueCommand.dlc = 0x8;
-
-    ((int16_t*) torqueCommand.data)[0] = 0;
-
-    ((int16_t*) torqueCommand.data)[1] = 0;
-
-    torqueCommand.data[4] = 1; // inverter direction
-
-    torqueCommand.data[5] = 0; // inverter enable
-
-    ((int16_t*) torqueCommand.data)[3] = 0; // inverter torque limit
-
-//    CAN_AddTxPacket(&can1, &packet1);
-    CAN_AddTxPacket(&can1, &torqueCommand);
+    NightCANPacket torqueCommand = inverter_init(&can1, 0, 10.0f);
 
     NightCANReceivePacket receive;
 
@@ -229,13 +205,9 @@ int main(void)
     {
         uint32_t curtime = lib_timer_delta_ms();
         led_rainbow(curtime / 1000.0f);
-        pduData.switches.green_status_light = 1;
-        pduData.switches.battery_fans = 1;
-        pdu_periodic(&pduData);
 
         uint16_t bse3 = ADC1_BUFFER[BSE3_IDX];
 
-//        usb_printf("BSE3 VALUE: %d", bse3);
         float float_bse3 = ((float) bse3) * 15.1f / 10.0f * 3.3f / 65535.0f; // voltage at i/o (5v scale)
         float pct = (float_bse3 - (0.22f*5.0f)) / (0.62f*5.0f);
 
@@ -251,16 +223,11 @@ int main(void)
         VCUModel_evaluate(&inputs, &outputs, curtime/1000.0f);
         receive_periodic();
         bspd_periodic(bspdaddr);
-
-//        usb_printf("Drive var was: %d, Torque request output was: %f, STOMPP was %d, BSE was %f", checkDrive(),  outputs.torque.torqueRequest, outputs.stompp.output, inputs.stompp.bse_percent);
-
+        pdu_periodic(&pduData);
 
         torqueCommand.data[5] = outputs.torque.torqueRequest == 0 ? 0 : 1; // inverter enable
 
-//        can_writeFloat(int16_t, &packet1, 0, outputs.torque.torqueRequest, 0.1f);
-        can_writeFloat(int16_t, &torqueCommand, 0, outputs.torque.torqueRequest, 0.1f);
-
-//        usb_printf("The BSE is currently at %.5f and the torque command was %f", pct, ((uint16_t*)torqueCommand.data)[0] / 10.0f);
+        inverter_update_torque_request(outputs.torque.torqueRequest);
 
         CAN_PollReceive(&can1);
         CAN_Service(&can1);
@@ -271,36 +238,8 @@ int main(void)
 
         CANDriverStatus can1_status = CAN_GetReceivedPacket(&can1, &receive);
 
-//        if(can1_status == CAN_OK) {
-//            usb_printf("Received Packet 0x%X, free level was %d", receive.id, free_level);
-////            CAN_AddTxPacket( &can1, &packet1);
-//        } else {
-////            usb_printf("CAN Status was 0x%X and the free level was %d", can1_status, free_level);
-//        }
-
-
-
-
         uint32_t tach = HAL_LPTIM_ReadCounter(&hlptim2);
         float rpm = tach / 30.0f;
-
-//        if(bspd.trigger) {
-//            pduData.switches.cooling_pump_1 = 0.2f;
-//            pduData.switches.cooling_pump_2 = 0.2f;
-//            pduData.switches.battery_fans = 0.00f;
-//            pduData.switches.rad_fans = 0.00f;
-//            pduData.switches.cooling_pump_1 = 0.00f;
-//            pduData.switches.cooling_pump_2 = 0.00f;
-//        } else {
-//            pduData.switches.cooling_pump_1 = 0.8f; // percent
-//            pduData.switches.cooling_pump_2 = 0.8f;
-//            pduData.switches.battery_fans = 1.0f;
-//            pduData.switches.rad_fans = 1.0f-0.0f;
-//            pduData.switches.cooling_pump_1 = 1.00f;
-//            pduData.switches.cooling_pump_2 = 1.00f;
-//        }
-
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
