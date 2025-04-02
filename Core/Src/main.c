@@ -225,8 +225,6 @@ int main(void)
         bspd_periodic(bspdaddr);
         pdu_periodic(&pduData);
 
-        torqueCommand.data[5] = outputs.torque.torqueRequest == 0 ? 0 : 1; // inverter enable
-
         inverter_update_torque_request(outputs.torque.torqueRequest);
 
         CAN_PollReceive(&can1);
