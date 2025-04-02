@@ -260,6 +260,7 @@ int main(void)
 //
 //            isFinished = 0;
 //        }
+     
         uint32_t tach = HAL_LPTIM_ReadCounter(&hlptim2);
         float rpm = tach / 30.0f;
 
