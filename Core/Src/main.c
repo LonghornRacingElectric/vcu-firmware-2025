@@ -199,7 +199,7 @@ int main(void)
 
     NightCANPacket torqueCommand = inverter_init(&can1, 0, 10.0f);
 
-    NightCANReceivePacket receive;
+    NightCANReceivePacket test = CAN_create_receive_packet(0xBB, 0, 8);
 
     while (1)
     {
@@ -227,14 +227,16 @@ int main(void)
 
         inverter_update_torque_request(outputs.torque.torqueRequest);
 
-        CAN_PollReceive(&can1);
-        CAN_Service(&can1);
+        CAN_periodic(&can1);
 
         pduData.switches.brake_light = (float) outputs.brake_light.lightOn * 40;
 
         uint32_t free_level = HAL_FDCAN_GetTxFifoFreeLevel(&hfdcan1);
 
-        CANDriverStatus can1_status = CAN_GetReceivedPacket(&can1, &receive);
+        if(test.is_recent) {
+            printf("The test packet was received with the first byte of data being: 0x%X", test.data[0]);
+            test.is_recent = false;
+        }
 
         uint32_t tach = HAL_LPTIM_ReadCounter(&hlptim2);
         float rpm = tach / 30.0f;
