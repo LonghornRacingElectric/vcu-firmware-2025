@@ -278,9 +278,6 @@ int main(void)
 ////            usb_printf("CAN Status was 0x%X and the free level was %d", can1_status, free_level);
 //        }
 
-
-
-
         uint32_t tach = HAL_LPTIM_ReadCounter(&hlptim2);
         float rpm = tach / 30.0f;
 
