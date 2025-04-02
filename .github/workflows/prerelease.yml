@@ -2,8 +2,8 @@ name: Build and Pre-Release Firmware
 
 on: 
   push:
-    tags-ignore:
-      - '**' # The '**' wildcard matches all tag names.
+    # tags-ignore:
+    #   - '**' # The '**' wildcard matches all tag names.
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
