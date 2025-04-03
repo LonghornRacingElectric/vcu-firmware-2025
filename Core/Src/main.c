@@ -149,7 +149,7 @@ int main(void)
   lib_timer_init();
 
   NightCANInstance can1 = {};
-  CAN_Init( &can1, &hfdcan1, 0, 0xFF);
+  CAN_Init( &can1, &hfdcan1, 0, 0xFF, 0, 0);
 
 
     VCUModelParameters params = {
