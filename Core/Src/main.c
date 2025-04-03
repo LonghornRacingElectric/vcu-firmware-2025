@@ -148,8 +148,8 @@ int main(void)
   HAL_ADC_Start_DMA(&hadc3, (uint32_t *) ADC3_BUFFER, 2);
   lib_timer_init();
 
-    NightCANInstance can1 = {};
-    CAN_Init( &can1, &hfdcan1, 0, 0xFF);
+  NightCANInstance can1 = {};
+  CAN_Init( &can1, &hfdcan1, 0, 0xFF);
 
 
     VCUModelParameters params = {
@@ -212,27 +212,19 @@ int main(void)
         float float_bse3 = ((float) bse3) * 15.1f / 10.0f * 3.3f / 65535.0f; // voltage at i/o (5v scale)
         float pct = (float_bse3 - (0.22f*5.0f)) / (0.62f*5.0f);
 
-        if(!checkDrive()) {
-            inputs.apps.pedal1Percent = pct;
-            inputs.apps.pedal2Percent = pct;
-        } else {
-            // need to send CAN packet to say disabled
-            inputs.apps.pedal1Percent = 0.0f;
-            inputs.apps.pedal2Percent = 0.0f;
-        }
+        inputs.apps.pedal1Percent = pct;
+        inputs.apps.pedal2Percent = pct;
+        inputs.drive_switch_enabled = checkDrive();
 
         VCUModel_evaluate(&inputs, &outputs, curtime/1000.0f);
+        inverter_update_torque_request(outputs.torque.torqueRequest);
+
         receive_periodic();
         bspd_periodic(bspdaddr);
         pdu_periodic(&pduData);
-
-        inverter_update_torque_request(outputs.torque.torqueRequest);
-
         CAN_periodic(&can1);
 
         pduData.switches.brake_light = (float) outputs.brake_light.lightOn * 40;
-
-        uint32_t free_level = HAL_FDCAN_GetTxFifoFreeLevel(&hfdcan1);
 
         if(test.is_recent) {
             printf("The test packet was received with the first byte of data being: 0x%X", test.data[0]);
