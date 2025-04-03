@@ -27,11 +27,11 @@
 #include "usart.h"
 #include "usb_device.h"
 #include "gpio.h"
+#include "inverter.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
-//extern "C" {
 #include "usb_vcp.h"
 #include "pdu.h"
 #include "led.h"
@@ -76,7 +76,9 @@ static void MPU_Config(void);
 /* USER CODE BEGIN 0 */
 bool isFinished;
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
+//    if(hadc == &hadc1) {
     isFinished = 1;
+//    }
 }
 
 /* USER CODE END 0 */
@@ -145,10 +147,10 @@ int main(void)
   HAL_ADC_Start_DMA(&hadc1, (uint32_t *) ADC1_BUFFER, 14);
   HAL_ADC_Start_DMA(&hadc3, (uint32_t *) ADC3_BUFFER, 2);
   lib_timer_init();
-  night_can_init(&hfdcan1);
 
-    // --- Start the FDCAN peripheral ---
-    //     Must be done once after init and before sending the first message
+    NightCANInstance can1 = {};
+    CAN_Init( &can1, &hfdcan1, 0, 0xFF);
+
 
     VCUModelParameters params = {
             .torque = {
@@ -195,94 +197,50 @@ int main(void)
     HAL_LPTIM_Init(&hlptim2);
     HAL_LPTIM_Counter_Start(&hlptim2, hlptim2.Instance->ARR);
 
-    uint8_t packet1_data[4];
-    uint8_t packet2_data[8];
+    NightCANPacket *torqueCommand = inverter_init(&can1, 0, 10.0f);
+
+    NightCANReceivePacket test = CAN_create_receive_packet(0xBB, 0, 8);
+    CAN_addReceivePacket(&can1, &test);
+
     while (1)
     {
-        uint32_t curtime = lib_timer_ms_elapsed();
+        uint32_t curtime = lib_timer_delta_ms();
         led_rainbow(curtime / 1000.0f);
-        pduData.switches.green_status_light = 1;
-        pduData.switches.battery_fans = 1;
-        pdu_periodic(&pduData);
 
-        if(checkDrive()) {
-            inputs.apps.pedal1Percent = 0.101f;
-            inputs.apps.pedal2Percent = 0.101f;
+        uint16_t bse3 = ADC1_BUFFER[BSE3_IDX];
 
-            ((int16_t*)packet2_data)[0] = outputs.torque.torqueRequest;
-            ((int16_t*)packet2_data)[1] = 0;
-            packet2_data[4] = 1;
-            packet2_data[5] = outputs.torque.torqueRequest > 0 ? 1 : 0;
-            ((int16_t*)packet2_data)[3] = 10;
+        float float_bse3 = ((float) bse3) * 15.1f / 10.0f * 3.3f / 65535.0f; // voltage at i/o (5v scale)
+        float pct = (float_bse3 - (0.22f*5.0f)) / (0.62f*5.0f);
 
-            HAL_StatusTypeDef status = send_CAN_data(&hfdcan1, 0xDD, FDCAN_DLC_BYTES_4, packet1_data);
+        if(!checkDrive()) {
+            inputs.apps.pedal1Percent = pct;
+            inputs.apps.pedal2Percent = pct;
         } else {
             // need to send CAN packet to say disabled
             inputs.apps.pedal1Percent = 0.0f;
             inputs.apps.pedal2Percent = 0.0f;
         }
 
-        VCUModel_evaluate(&inputs, &outputs, lib_timer_ms_elapsed()/1000.0f);
+        VCUModel_evaluate(&inputs, &outputs, curtime/1000.0f);
         receive_periodic();
         bspd_periodic(bspdaddr);
+        pdu_periodic(&pduData);
 
-        usb_printf("Drive var was: %d, Torque request output was: %f, STOMPP was %d, BSE was %f", checkDrive(),  outputs.torque.torqueRequest, outputs.stompp.output, inputs.stompp.bse_percent);
+        inverter_update_torque_request(outputs.torque.torqueRequest);
 
-
-//        usb_printf("BSPD outputs were: hard braking: %d, motor 5kw: %d, error: %d, trigger: %d, latch: %d",
-//                   bspd.hard_braking, bspd.motor_5kw, bspd.error, bspd.trigger, bspd.latch);
+        CAN_periodic(&can1);
 
         pduData.switches.brake_light = (float) outputs.brake_light.lightOn * 40;
 
-
         uint32_t free_level = HAL_FDCAN_GetTxFifoFreeLevel(&hfdcan1);
 
-
-//        if(isFinished) {
-//            usb_printf("Motor current sense: %d", ADC1_BUFFER[9]);
-//            isFinished = 0;
-//        }
-
-//        if(isFinished) {
-////            for (int i = 0; i < 14; i++) {
-////
-////                usb_printf("ADC 1: Data at %d, value: %d", i, ADC1_BUFFER[i]);
-////            }
-//
-////            usb_printf("ADC 1: Data at %d, value: %d", 7, ADC1_BUFFER[7]);
-////            usb_printf("ADC 1: Data at %d, value: %d", 6, ADC1_BUFFER[6]);
-//
-////                usb_printf("ADC 1: Data at %d, value: %d", 6, ADC1_BUFFER[6]);
-//
-////            for(int i = 0; i < 2; i++) {
-////                usb_printf("ADC 3: Data at %d, value: %d", i, ADC3_BUFFER[i]);
-////            }
-//
-//            isFinished = 0;
-//        }
-     
-        uint32_t tach = HAL_LPTIM_ReadCounter(&hlptim2);
-        float rpm = tach / 30.0f;
-
-//        usb_printf("Tach info: %i, RPM: %f", tach, rpm);
-
-        if(bspd.trigger) {
-            pduData.switches.cooling_pump_1 = 0.2f;
-            pduData.switches.cooling_pump_2 = 0.2f;
-            pduData.switches.battery_fans = 0.00f;
-            pduData.switches.rad_fans = 0.00f;
-            pduData.switches.cooling_pump_1 = 0.00f;
-            pduData.switches.cooling_pump_2 = 0.00f;
-        } else {
-            pduData.switches.cooling_pump_1 = 0.8f; // percent
-            pduData.switches.cooling_pump_2 = 0.8f;
-            pduData.switches.battery_fans = 1.0f;
-            pduData.switches.rad_fans = 1.0f-0.0f;
-            pduData.switches.cooling_pump_1 = 1.00f;
-            pduData.switches.cooling_pump_2 = 1.00f;
+        if(test.is_recent) {
+            printf("The test packet was received with the first byte of data being: 0x%X", test.data[0]);
+            CAN_consume_packet(&test);
         }
 
-
+        uint32_t tach = HAL_LPTIM_ReadCounter(&hlptim2);
+        float rpm = tach / 30.0f;
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
