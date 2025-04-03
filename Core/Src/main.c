@@ -148,7 +148,7 @@ int main(void)
   HAL_ADC_Start_DMA(&hadc3, (uint32_t *) ADC3_BUFFER, 2);
   lib_timer_init();
 
-  NightCANInstance can1 = {};
+  NightCANInstance can1 = CAN_new_instance();
   CAN_Init( &can1, &hfdcan1, 0, 0xFF, 0, 0);
 
 
@@ -199,7 +199,7 @@ int main(void)
 
     NightCANPacket *torqueCommand = inverter_init(&can1, 0, 10.0f);
 
-    NightCANReceivePacket test = CAN_create_receive_packet(0xBB, 0, 8);
+    NightCANReceivePacket test = CAN_create_receive_packet(0xDD, 0, 1);
     CAN_addReceivePacket(&can1, &test);
 
     while (1)
@@ -226,10 +226,11 @@ int main(void)
 
         pduData.switches.brake_light = (float) outputs.brake_light.lightOn * 40;
 
-        if(test.is_recent) {
-            printf("The test packet was received with the first byte of data being: 0x%X", test.data[0]);
-            CAN_consume_packet(&test);
-        }
+//        if(test.is_recent) {
+//            usb_printf("The test packet was received with the first byte of data being: 0x%X", test.data[0]);
+//            CAN_consume_packet(&test);
+//            led_set(100, 100, 100);
+//        }
 
         uint32_t tach = HAL_LPTIM_ReadCounter(&hlptim2);
         float rpm = tach / 30.0f;
