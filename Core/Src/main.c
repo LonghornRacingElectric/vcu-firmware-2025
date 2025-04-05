@@ -199,6 +199,9 @@ int main(void)
 
     NightCANPacket *torqueCommand = inverter_init(&can1, 0, 10.0f);
 
+    NightCANPacket speedPacket = CAN_create_packet(0xE0, 1, 2);
+    CAN_AddTxPacket(&can1, &speedPacket);
+
     NightCANReceivePacket test = CAN_create_receive_packet(0xDD, 0, 1);
     CAN_addReceivePacket(&can1, &test);
 
@@ -216,6 +219,8 @@ int main(void)
         inputs.apps.pedal2Percent = pct;
         inputs.drive_switch_enabled = checkDrive();
 
+        CAN_writeFloat(int16_t, &speedPacket, 0, lib_timer_elapsed_ms() / 1000.0f, 0.1);
+
         VCUModel_evaluate(&inputs, &outputs, curtime/1000.0f);
         inverter_update_torque_request(outputs.torque.torqueRequest);
 
@@ -226,11 +231,11 @@ int main(void)
 
         pduData.switches.brake_light = (float) outputs.brake_light.lightOn * 40;
 
-//        if(test.is_recent) {
-//            usb_printf("The test packet was received with the first byte of data being: 0x%X", test.data[0]);
-//            CAN_consume_packet(&test);
-//            led_set(100, 100, 100);
-//        }
+        if(checkDrive()) {
+            usb_printf("DRIVING");
+        } else {
+            usb_printf("STOPPED");
+        }
 
         uint32_t tach = HAL_LPTIM_ReadCounter(&hlptim2);
         float rpm = tach / 30.0f;
