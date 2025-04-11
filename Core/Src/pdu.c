@@ -161,6 +161,9 @@ void pdu_init(PDUData *pduData) {
     HAL_TIM_PWM_Start(&PWM_GREEN_STATUS_TIM, TIM_GREEN_STATUS_CH);
     HAL_TIM_PWM_Start(&PWM_RED_STATUS_TIM, TIM_RED_STATUS_CH);
 
+    /* Line Lock */
+    HAL_TIM_PWM_Start(&htim16, TIM_CHANNEL_1);
+
     pduData->init = true;
 }
 
@@ -189,6 +192,8 @@ void pdu_periodic(PDUData *pduData) {
     PWM_BRAKE_LIGHT_TIM.Instance->PWM_BRAKE_LIGHT = pduData->switches.brake_light * PWM_BRAKE_LIGHT_TIM.Instance->ARR;
     PWM_GREEN_STATUS_TIM.Instance->PWM_GREEN_STATUS =  pduData->switches.green_status_light * PWM_GREEN_STATUS_TIM.Instance->ARR;
     PWM_RED_STATUS_TIM.Instance->PWM_RED_STATUS = pduData->switches.red_status_light * PWM_RED_STATUS_TIM.Instance->ARR;
+
+    htim16.Instance->CCR1 = 0.2f * htim16.Instance->ARR;
     // write out data to the CAN bus
 //    writePDUToCAN(pduData);
 }

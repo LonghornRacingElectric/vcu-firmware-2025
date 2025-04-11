@@ -27,7 +27,6 @@
 #include "usart.h"
 #include "usb_device.h"
 #include "gpio.h"
-#include "inverter.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -41,6 +40,7 @@
 #include "timer.h"
 #include "current_sense.h"
 #include "night_can.h"
+#include "inverter.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -202,8 +202,8 @@ int main(void)
     NightCANPacket speedPacket = CAN_create_packet(0xE0, 1, 2);
     CAN_AddTxPacket(&can1, &speedPacket);
 
-    NightCANReceivePacket test = CAN_create_receive_packet(0xDD, 0, 1);
-    CAN_addReceivePacket(&can1, &test);
+    NightCANReceivePacket testPacket = CAN_create_receive_packet(0xDD, 0, 1);
+    CAN_addReceivePacket(&can1, &testPacket);
 
     while (1)
     {
@@ -221,8 +221,11 @@ int main(void)
 
         CAN_writeFloat(int16_t, &speedPacket, 0, lib_timer_elapsed_ms() / 1000.0f, 0.1);
 
+//        float test = 0.0f;
+        float test = CAN_readFloat(int16_t, &testPacket, 0, 0.1);
+
         VCUModel_evaluate(&inputs, &outputs, curtime/1000.0f);
-        inverter_update_torque_request(outputs.torque.torqueRequest);
+//        inverter_update_torque_request(outputs.torque.torqueRequest);
 
         receive_periodic();
         bspd_periodic(bspdaddr);

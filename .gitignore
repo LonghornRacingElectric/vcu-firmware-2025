@@ -150,3 +150,4 @@ cmake_install.cmake
 *.iml
 *.xml
 *.idea/
+mx.scratch
