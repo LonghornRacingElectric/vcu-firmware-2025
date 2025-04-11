@@ -17,11 +17,11 @@ void updateSpeedRequest(float speed_request) {
 }
 
 void updateInverterDirection(uint8_t direction) {
-    CAN_writeInt(uint8_t, &torqueCommand, INVERTER_TORQUE_COMMAND_DIRECTION_BYTE, direction); // inverter direction
+    CAN_writeInt(INVERTER_TORQUE_COMMAND_DIRECTION_TYPE, &torqueCommand, INVERTER_TORQUE_COMMAND_DIRECTION_BYTE, direction); // inverter direction
 }
 
 void updateInverterEnable(uint8_t enable) {
-    CAN_writeInt(uint8_t, &torqueCommand, INVERTER_TORQUE_COMMAND_ENABLE_BYTE, enable); // inverter enable
+    CAN_writeInt(INVERTER_TORQUE_COMMAND_ENABLE_TYPE, &torqueCommand, INVERTER_TORQUE_COMMAND_ENABLE_BYTE, enable); // inverter enable
 }
 
 void updateInverterTorqueLimit(float torque_limit) {
