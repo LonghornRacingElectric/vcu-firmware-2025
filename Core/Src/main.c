@@ -74,6 +74,17 @@ static void MPU_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+char GGA[100];
+char RMC[100];
+
+
+int flagGGA = 0, flagRMC = 0;
+char lcdBuffer [50];
+
+
+int VCCTimeout = 5000; // GGA or RMC will not be received if the VCC is not sufficient
+
 bool isFinished;
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
 //    if(hadc == &hadc1) {
@@ -134,7 +145,6 @@ int main(void)
   MX_TIM16_Init();
   MX_UART4_Init();
   MX_USB_DEVICE_Init();
-  MX_UART7_Init();
   /* USER CODE BEGIN 2 */
   PDUData pduData = {};
   BSPDOutputs bspd;
@@ -150,6 +160,7 @@ int main(void)
 
   NightCANInstance can1 = CAN_new_instance();
   CAN_Init( &can1, &hfdcan1, 0, 0xFF, 0, 0);
+  CAN_bootload_init(VCU_ENTER_BOOTLOADER_ID);
 
 
     VCUModelParameters params = {
@@ -205,6 +216,9 @@ int main(void)
     NightCANReceivePacket testPacket = CAN_create_receive_packet(0xDD, 0, 1);
     CAN_addReceivePacket(&can1, &testPacket);
 
+    NightCANReceivePacket strainGauge = CAN_create_receive_packet(WHEEL_SPEED_STRAIN_GAUGE_PUSHROD_SPRING_DISP_FR_ID, 0, WHEEL_SPEED_STRAIN_GAUGE_PUSHROD_SPRING_DISP_FR_DLC);
+    CAN_addReceivePacket(&can1, &strainGauge);
+
     while (1)
     {
         uint32_t curtime = lib_timer_delta_ms();
@@ -221,6 +235,7 @@ int main(void)
 
         CAN_writeFloat(int16_t, &speedPacket, 0, lib_timer_elapsed_ms() / 1000.0f, 0.1);
 
+
 //        float test = 0.0f;
         float test = CAN_readFloat(int16_t, &testPacket, 0, 0.1);
 
@@ -234,11 +249,10 @@ int main(void)
 
         pduData.switches.brake_light = (float) outputs.brake_light.lightOn * 40;
 
-        if(checkDrive()) {
-            usb_printf("DRIVING");
-        } else {
-            usb_printf("STOPPED");
-        }
+//        if(strainGauge.is_recent) {
+//            usb_printf("Packet Received! Printing the values of the strain gauge: %f", CAN_readFloat(WHEEL_SPEED_STRAIN_GAUGE_PUSHROD_SPRING_DISP_FR_STRAIN_GAUGE_VOLTAGE_TYPE, &strainGauge, WHEEL_SPEED_STRAIN_GAUGE_PUSHROD_SPRING_DISP_FR_STRAIN_GAUGE_VOLTAGE_BYTE, WHEEL_SPEED_STRAIN_GAUGE_PUSHROD_SPRING_DISP_FR_STRAIN_GAUGE_VOLTAGE_PREC));
+////            CAN_consume_packet(&strainGauge);
+//        }
 
         uint32_t tach = HAL_LPTIM_ReadCounter(&hlptim2);
         float rpm = tach / 30.0f;

@@ -82,10 +82,6 @@ void Error_Handler(void);
 #define BSPD5_GPIO_Port GPIOC
 #define FUSE1_Pin GPIO_PIN_2
 #define FUSE1_GPIO_Port GPIOB
-#define STLINK_RX_Pin GPIO_PIN_7
-#define STLINK_RX_GPIO_Port GPIOE
-#define STLINK_TX_Pin GPIO_PIN_8
-#define STLINK_TX_GPIO_Port GPIOE
 #define FUSE2_Pin GPIO_PIN_9
 #define FUSE2_GPIO_Port GPIOE
 #define FUSE3_Pin GPIO_PIN_10

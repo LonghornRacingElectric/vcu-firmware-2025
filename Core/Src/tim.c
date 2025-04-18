@@ -417,9 +417,9 @@ void MX_TIM16_Init(void)
 
   /* USER CODE END TIM16_Init 1 */
   htim16.Instance = TIM16;
-  htim16.Init.Prescaler = 5;
+  htim16.Init.Prescaler = 2;
   htim16.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim16.Init.Period = 5000;
+  htim16.Init.Period = 65535;
   htim16.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim16.Init.RepetitionCounter = 0;
   htim16.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
@@ -432,7 +432,7 @@ void MX_TIM16_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
+  sConfigOC.Pulse = 2500;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_ENABLE;
