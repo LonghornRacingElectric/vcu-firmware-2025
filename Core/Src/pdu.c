@@ -1,10 +1,13 @@
 //
 // Created by Dhairya Gupta on 2/2/25.
+// Does power deliver, current sense, and voltage sense.
 //
 
 #include "pdu.h"
 #include "tim.h"
 #include "usb_vcp.h"
+#include "current_sense.h"
+#include "timer.h"
 
 #ifdef REVA
 #define FAULT_BATTERY_FANS_GPIOX GPIOE
@@ -120,13 +123,18 @@
 #define TIM_RED_STATUS_CH TIM_CHANNEL_3
 #endif
 
-void pdu_init(PDUData *pduData) {
+static NightCANPacket vcuShutdownStatusPacket;
+static NightCANPacket vcuFusesPacket;
+static NightCANPacket vcuCurrentSensePacket;
+
+
+void pdu_init(PDUData *pduData, NightCANInstance *hcan) {
     pduData->faults.battery_fans = 0;
     pduData->faults.rad_fans = 0;
     pduData->faults.board_power = 0;
     pduData->faults.brake_light = 0;
-    pduData->faults.cooling_pump_1 = 0;
-    pduData->faults.cooling_pump_2 = 0;
+    pduData->faults.motor_pump = 0;
+    pduData->faults.battery_pump = 0;
     pduData->faults.green_status_light = 0;
     pduData->faults.red_status_light = 0;
 
@@ -134,8 +142,8 @@ void pdu_init(PDUData *pduData) {
     pduData->currents.rad_fans = 0;
     pduData->currents.board_power = 0;
     pduData->currents.brake_light = 0;
-    pduData->currents.cooling_pump_1 = 0;
-    pduData->currents.cooling_pump_2 = 0;
+    pduData->currents.motor_pump = 0;
+    pduData->currents.battery_pump = 0;
     pduData->currents.green_status_light = 0;
     pduData->currents.red_status_light = 0;
 
@@ -165,11 +173,50 @@ void pdu_init(PDUData *pduData) {
     HAL_TIM_PWM_Start(&htim16, TIM_CHANNEL_1);
 
     pduData->init = true;
+
+    pdu_can_init(hcan);
 }
 
+void pdu_can_init(NightCANInstance *instance) {
+    vcuShutdownStatusPacket = CAN_create_packet(VCU_SHUTDOWN_STATUS_ID, VCU_SHUTDOWN_STATUS_FREQ, VCU_SHUTDOWN_STATUS_DLC);
+    vcuCurrentSensePacket = CAN_create_packet(VCU_CURRENT_SENSE_ID, VCU_CURRENT_SENSE_FREQ, VCU_CURRENT_SENSE_DLC);
+    vcuFusesPacket = CAN_create_packet(VCU_FUSES_ID, VCU_FUSES_FREQ, VCU_FUSES_DLC);
+
+    CAN_AddTxPacket(instance, &vcuShutdownStatusPacket);
+    CAN_AddTxPacket(instance, &vcuCurrentSensePacket);
+    CAN_AddTxPacket(instance, &vcuFusesPacket);
+}
+
+float breathing_animation(float delta_time, float period, float
+    scale_factor, float min) {
+    if (period <= 0.0f) {
+        return 0.0f;
+    }
+
+    float normalized_time = delta_time / period;
+
+    // Scale the sine wave so its peak is at scale_factor
+    float value = scale_factor * (min + 0.5f + 0.5f * sinf(2.0f * M_PI *
+                                                    normalized_time));
+
+    if (value < 0.0f) {
+        value = 0.0f;
+    } else if (value > 1.0f) {
+        value = 1.0f;
+    }
+
+    return sqrtf(value);
+}
+
+void setPWMLights(float brake_light, float green_status, float red_status) {
+    PWM_BRAKE_LIGHT_TIM.Instance->PWM_BRAKE_LIGHT = brake_light * PWM_BRAKE_LIGHT_TIM.Instance->ARR;
+    PWM_GREEN_STATUS_TIM.Instance->PWM_GREEN_STATUS =  green_status * PWM_GREEN_STATUS_TIM.Instance->ARR;
+    PWM_RED_STATUS_TIM.Instance->PWM_RED_STATUS = red_status * PWM_RED_STATUS_TIM.Instance->ARR;
+//    PWM_RED_STATUS_TIM.Instance->PWM_RED_STATUS = 0.1f * PWM_RED_STATUS_TIM.Instance->ARR;
+}
 
 void pdu_periodic(PDUData *pduData) {
-    if(!pduData->init) pdu_init(pduData); // safety for dumb programming mistakes
+    if(!pduData->init) return; // safety for dumb programming mistakes
     // most critical -- write the data out to the pins
     setPDUSwitches(pduData);
 
@@ -189,31 +236,73 @@ void pdu_periodic(PDUData *pduData) {
     PWM_RADIATOR_FANS_TIM.Instance->PWM_RADIATOR_FANS = pduData->switches.rad_fans * PWM_RADIATOR_FANS_TIM.Instance->ARR;
 
     /* Lights */
-    PWM_BRAKE_LIGHT_TIM.Instance->PWM_BRAKE_LIGHT = pduData->switches.brake_light * PWM_BRAKE_LIGHT_TIM.Instance->ARR;
-    PWM_GREEN_STATUS_TIM.Instance->PWM_GREEN_STATUS =  pduData->switches.green_status_light * PWM_GREEN_STATUS_TIM.Instance->ARR;
-    PWM_RED_STATUS_TIM.Instance->PWM_RED_STATUS = pduData->switches.red_status_light * PWM_RED_STATUS_TIM.Instance->ARR;
+    setPWMLights(pduData->switches.brake_light, pduData->switches.green_status_light,
+                 pduData->switches.red_status_light);
+
 
     htim16.Instance->CCR1 = 0.2f * htim16.Instance->ARR;
+
+    checkPDUVoltages(pduData);
+
     // write out data to the CAN bus
-//    writePDUToCAN(pduData);
+    writePDUToCAN(pduData);
 }
 
+void writePDUToCAN(PDUData *data) {
+    /** Fuse packet 1 */
+    CAN_writeBitfield(&vcuFusesPacket, VCU_FUSES_VCU_FUSES_1_BYTE, VCU_FUSES_VCU_FUSES_1_BOARDS_FUSE_IDX, data->faults.board_power);
+    CAN_writeBitfield(&vcuFusesPacket, VCU_FUSES_VCU_FUSES_1_BYTE, VCU_FUSES_VCU_FUSES_1_BATT_FANS_FUSE_IDX, data->faults.battery_fans);
+    CAN_writeBitfield(&vcuFusesPacket, VCU_FUSES_VCU_FUSES_1_BYTE, VCU_FUSES_VCU_FUSES_1_BATT_PUMP_FUSE_IDX, data->faults.battery_pump);
+    CAN_writeBitfield(&vcuFusesPacket, VCU_FUSES_VCU_FUSES_1_BYTE, VCU_FUSES_VCU_FUSES_1_LL_FUSE_IDX, data->faults.line_lock);
+    CAN_writeBitfield(&vcuFusesPacket, VCU_FUSES_VCU_FUSES_1_BYTE, VCU_FUSES_VCU_FUSES_1_MOTOR_PUMP_FUSE_IDX, data->faults.motor_pump);
+    CAN_writeBitfield(&vcuFusesPacket, VCU_FUSES_VCU_FUSES_1_BYTE, VCU_FUSES_VCU_FUSES_1_SHTDN_FUSE_IDX, data->faults.shutdown);
+    CAN_writeBitfield(&vcuFusesPacket, VCU_FUSES_VCU_FUSES_1_BYTE, VCU_FUSES_VCU_FUSES_1_TSSI_GREEN_FUSE_IDX, data->faults.green_status_light);
+    CAN_writeBitfield(&vcuFusesPacket, VCU_FUSES_VCU_FUSES_1_BYTE, VCU_FUSES_VCU_FUSES_1_TSSI_RED_FUSE_IDX, data->faults.red_status_light);
+
+    /** Fuse Packet 2 */
+    CAN_writeBitfield(&vcuFusesPacket, VCU_FUSES_VCU_FUSES_2_BYTE, VCU_FUSES_VCU_FUSES_2_BRAKE_LIGHT_FUSE_IDX, data->faults.brake_light);
+    CAN_writeBitfield(&vcuFusesPacket, VCU_FUSES_VCU_FUSES_2_BYTE, VCU_FUSES_VCU_FUSES_2_RTD_FUSE_IDX, data->faults.rtd);
+
+
+    /** VCU Current Sense */
+    CAN_writeFloat(VCU_CURRENT_SENSE_BATTERY_COOLING_CURRENT_TYPE, &vcuCurrentSensePacket,
+                   VCU_CURRENT_SENSE_BATTERY_COOLING_CURRENT_BYTE, data->currents.battery_pump,
+                   VCU_CURRENT_SENSE_BATTERY_COOLING_CURRENT_PREC);
+}
+
+void unveiling_light_animation(float dt, PDUData *data) {
+    data->switches.red_status_light = 0.0f; // off
+    data->switches.green_status_light = breathing_animation(lib_timer_elapsed_ms()/1000.0f, 7.5f, 0.15f, 0.02f); // 5s period, 0.4 max value
+    data->switches.brake_light = breathing_animation(lib_timer_elapsed_ms()/1000.0f, 7.5f, 0.25f, 0.02f); // 5s period, 0.6 max value
+
+//    usb_printf("The data values for each switch and the delta time are as follows");
+//    data->switches.red_status_light = 0.01f;
+//    data->switches.green_status_light = 0.01f; // 5s period, 0.4 max value
+//    data->switches.brake_light =0.01f; // 5s period, 0.6 max value
+}
 
 void checkPDUFaults(PDUData *pduData) {
     pduData->faults.battery_fans = HAL_GPIO_ReadPin(FAULT_BATTERY_FANS_GPIOX, FAULT_BATTERY_FANS_PIN);
     pduData->faults.rad_fans = HAL_GPIO_ReadPin(FAULT_RAD_FANS_GPIOX, FAULT_RAD_FANS_PIN);
     pduData->faults.board_power = HAL_GPIO_ReadPin(FAULT_BOARD_POWER_GPIOX, FAULT_BOARD_POWER_PIN);
     pduData->faults.brake_light = HAL_GPIO_ReadPin(FAULT_BRAKE_LIGHT_GPIOX, FAULT_BRAKE_LIGHT_PIN);
-    pduData->faults.cooling_pump_1 = HAL_GPIO_ReadPin(FAULT_COOLING_PUMP_1_GPIOX, FAULT_COOLING_PUMP_1_PIN);
-    pduData->faults.cooling_pump_2 = HAL_GPIO_ReadPin(FAULT_COOLING_PUMP_2_GPIOX, FAULT_COOLING_PUMP_2_PIN);
+    pduData->faults.motor_pump = HAL_GPIO_ReadPin(FAULT_COOLING_PUMP_1_GPIOX, FAULT_COOLING_PUMP_1_PIN);
+    pduData->faults.battery_pump = HAL_GPIO_ReadPin(FAULT_COOLING_PUMP_2_GPIOX, FAULT_COOLING_PUMP_2_PIN);
     pduData->faults.green_status_light = HAL_GPIO_ReadPin(FAULT_GREEN_STATUS_GPIOX, FAULT_GREEN_STATUS_PIN);
     pduData->faults.red_status_light = HAL_GPIO_ReadPin(FAULT_RED_STATUS_GPIOX, FAULT_RED_STATUS_PIN);
 }
 
 
 void checkPDUCurrents(PDUData *data) {
-    //
+    // Read currents from Current sense
 }
+
+inline void checkPDUVoltages(PDUData *data) {
+#define V_T (0.70f * UINT16_MAX)
+    uint16_t v_sense_raw = ADC1_BUFFER[V_SENSE_IDX];
+    float v_sense_raw_pct = (float) v_sense_raw / V_T; // comparing to 24.0V ref.
+    data->voltages.v_sense = v_sense_raw_pct * 24.0f;
+};
 
 void setPDUSwitches(PDUData *pduData) {
     HAL_GPIO_WritePin(SWITCH_BATTERY_FANS_GPIOX, SWITCH_BATTERY_FANS_PIN, pduData->switches.battery_fans);

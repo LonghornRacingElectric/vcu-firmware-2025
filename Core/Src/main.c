@@ -81,6 +81,9 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
 //    }
 }
 
+uint16_t ADC1_BUFFER[14]; // 14 element 16bit ADC resolution buffer
+uint8_t ADC3_BUFFER[2];
+
 /* USER CODE END 0 */
 
 /**
@@ -137,11 +140,10 @@ int main(void)
   MX_UART7_Init();
   /* USER CODE BEGIN 2 */
   PDUData pduData = {};
-  BSPDOutputs bspd;
+  BSPDOutputs bspd = {};
   BSPDOutputs *bspdaddr = &bspd;
 
   /* Initialize Structures/Subsystems */
-  pdu_init(&pduData);
   led_init(TIM15, &htim15, 2); // missing a channel on the vcu
   dfu_init(GPIOA, GPIO_PIN_15);
   HAL_ADC_Start_DMA(&hadc1, (uint32_t *) ADC1_BUFFER, 14);
@@ -150,7 +152,7 @@ int main(void)
 
   NightCANInstance can1 = CAN_new_instance();
   CAN_Init( &can1, &hfdcan1, 0, 0xFF, 0, 0);
-
+  pdu_init(&pduData, &can1);
 
     VCUModelParameters params = {
             .torque = {
@@ -192,7 +194,7 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-
+    led_rainbow(10 / 1000.0f);
     HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, GPIO_PIN_SET);
     HAL_LPTIM_Init(&hlptim2);
     HAL_LPTIM_Counter_Start(&hlptim2, hlptim2.Instance->ARR);
@@ -232,15 +234,14 @@ int main(void)
         pdu_periodic(&pduData);
         CAN_periodic(&can1);
 
-        pduData.switches.brake_light = (float) outputs.brake_light.lightOn * 40;
 
-        if(checkDrive()) {
-            usb_printf("DRIVING");
-        } else {
-            usb_printf("STOPPED");
-        }
+        /** AESTHETIC, FOR UNVEILING; TODO: REMOVE LATER **/
+        unveiling_light_animation(curtime / 1000.0f, &pduData);
 
-        uint32_t tach = HAL_LPTIM_ReadCounter(&hlptim2);
+        uint16_t v_sense = ADC1_BUFFER[V_SENSE_IDX];
+        usb_printf("The V Sense was %f and the latch was %d", pduData.voltages.v_sense, bspd.latch);
+        uint32_t tach = HAL_LPTIM_ReadCounter
+                (&hlptim2);
         float rpm = tach / 30.0f;
     /* USER CODE END WHILE */
 
