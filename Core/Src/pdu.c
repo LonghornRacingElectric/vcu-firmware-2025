@@ -271,9 +271,9 @@ void writePDUToCAN(PDUData *data) {
 }
 
 void unveiling_light_animation(float dt, PDUData *data) {
-    data->switches.red_status_light = 0.0f; // off
-    data->switches.green_status_light = breathing_animation(lib_timer_elapsed_ms()/1000.0f, 7.5f, 0.15f, 0.02f); // 5s period, 0.4 max value
-    data->switches.brake_light = breathing_animation(lib_timer_elapsed_ms()/1000.0f, 7.5f, 0.25f, 0.02f); // 5s period, 0.6 max value
+    data->switches.red_status_light = breathing_animation(lib_timer_elapsed_ms()/1000.0f, 5.5f, 0.00005f, 0.0003f);; // off
+    data->switches.green_status_light = breathing_animation(lib_timer_elapsed_ms()/1000.0f, 5.5f, 0.005f, 0.0001f); // 5s period, 0.4 max value
+    data->switches.brake_light = breathing_animation(lib_timer_elapsed_ms()/1000.0f, 5.5f, 0.002f, 0.0001f); // 5s period, 0.6 max value
 
 //    usb_printf("The data values for each switch and the delta time are as follows");
 //    data->switches.red_status_light = 0.01f;
