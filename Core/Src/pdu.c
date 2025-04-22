@@ -9,6 +9,9 @@
 #include "current_sense.h"
 #include "timer.h"
 
+#include <math.h>    // For powf
+#include <float.h>   // For FLT_EPSILON
+
 #ifdef REVA
 #define FAULT_BATTERY_FANS_GPIOX GPIOE
 #define FAULT_BATTERY_FANS_PIN GPIO_PIN_3
@@ -208,11 +211,51 @@ float breathing_animation(float delta_time, float period, float
     return sqrtf(value);
 }
 
-void setPWMLights(float brake_light, float green_status, float red_status) {
-    PWM_BRAKE_LIGHT_TIM.Instance->PWM_BRAKE_LIGHT = brake_light * PWM_BRAKE_LIGHT_TIM.Instance->ARR;
-    PWM_GREEN_STATUS_TIM.Instance->PWM_GREEN_STATUS =  green_status * PWM_GREEN_STATUS_TIM.Instance->ARR;
-    PWM_RED_STATUS_TIM.Instance->PWM_RED_STATUS = red_status * PWM_RED_STATUS_TIM.Instance->ARR;
-//    PWM_RED_STATUS_TIM.Instance->PWM_RED_STATUS = 0.1f * PWM_RED_STATUS_TIM.Instance->ARR;
+ #define MAX(a, b) (((a) > (b)) ? (a) : (b))
+ #define MIN(a, b) (((a) < (b)) ? (a) : (b))
+
+/**
+ * @brief Adjusts a PWM percentage based on the current voltage to maintain
+ * perceived brightness relative to a nominal voltage
+ * * Assumes brightness is proportional to the square of the voltage (Power ~ V^2).
+ * The relationship might need tuning based on specific LED characteristics.
+ *
+ * @param nominalPctAt24V The desired PWM percentage (0.0f to 1.0f) if the voltage were exactly 24V.
+ * @param curVoltage The actual measured voltage supplying the lights.
+ * @return float The adjusted PWM percentage (0.0f to 1.0f) to apply at curVoltage.
+ */
+float normalizeLightWithVoltage(float nominalPctAt24V, float curVoltage) {
+
+    const float nominalVoltage = 24.0f;
+    const float voltageExponent = 2.0f; // Need to tune
+
+    // 0, so doesn't matter, output 0
+    if (nominalPctAt24V <= 0.0f) {
+        return 0.0f;
+    }
+
+    if(curVoltage < 12.0f) {
+        // LV is dead, don't PWM
+        return 0.0f;
+    }
+
+    // Scaling the voltage
+    float voltageRatio = nominalVoltage / curVoltage;
+    float scalingFactor = powf(voltageRatio, voltageExponent);
+
+    float adjustedPct = nominalPctAt24V * scalingFactor;
+
+    // clamping output
+     adjustedPct = MIN(adjustedPct, 1.0f); // Using MIN macro
+     adjustedPct = MAX(adjustedPct, 0.0f); // Using MAX macro
+
+    return adjustedPct;
+}
+
+void setPWMLights(float brake_light, float green_status, float red_status, float curVoltage) {
+    PWM_BRAKE_LIGHT_TIM.Instance->PWM_BRAKE_LIGHT = (uint32_t) normalizeLightWithVoltage(brake_light, curVoltage) * PWM_BRAKE_LIGHT_TIM.Instance->ARR;
+    PWM_GREEN_STATUS_TIM.Instance->PWM_GREEN_STATUS = (uint32_t) normalizeLightWithVoltage(green_status, curVoltage) * PWM_GREEN_STATUS_TIM.Instance->ARR;
+    PWM_RED_STATUS_TIM.Instance->PWM_RED_STATUS = (uint32_t) normalizeLightWithVoltage(red_status, curVoltage) * PWM_RED_STATUS_TIM.Instance->ARR;
 }
 
 void pdu_periodic(PDUData *pduData) {
@@ -237,7 +280,7 @@ void pdu_periodic(PDUData *pduData) {
 
     /* Lights */
     setPWMLights(pduData->switches.brake_light, pduData->switches.green_status_light,
-                 pduData->switches.red_status_light);
+                 pduData->switches.red_status_light, pduData->voltages.v_sense);
 
 
     htim16.Instance->CCR1 = 0.2f * htim16.Instance->ARR;
