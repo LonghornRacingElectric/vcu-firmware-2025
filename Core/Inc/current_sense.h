@@ -28,7 +28,7 @@
 #define ANALOG_BRAKE_IDX 0
 #define BOARDS_IDX 1
 
-uint16_t ADC1_BUFFER[14]; // 14 element 16bit ADC resolution buffer
-uint8_t ADC3_BUFFER[2];
+extern uint16_t ADC1_BUFFER[14]; // 14 element 16bit ADC resolution buffer
+extern uint8_t ADC3_BUFFER[2];
 
 #endif //VCU_FIRMWARE_2025_CURRENT_SENSE_H
