@@ -270,17 +270,6 @@ void writePDUToCAN(PDUData *data) {
                    VCU_CURRENT_SENSE_BATTERY_COOLING_CURRENT_PREC);
 }
 
-void unveiling_light_animation(float dt, PDUData *data) {
-    data->switches.red_status_light = breathing_animation(lib_timer_elapsed_ms()/1000.0f, 5.5f, 0.00005f, 0.0003f);; // off
-    data->switches.green_status_light = breathing_animation(lib_timer_elapsed_ms()/1000.0f, 5.5f, 0.005f, 0.0001f); // 5s period, 0.4 max value
-    data->switches.brake_light = breathing_animation(lib_timer_elapsed_ms()/1000.0f, 5.5f, 0.002f, 0.0001f); // 5s period, 0.6 max value
-
-//    usb_printf("The data values for each switch and the delta time are as follows");
-//    data->switches.red_status_light = 0.01f;
-//    data->switches.green_status_light = 0.01f; // 5s period, 0.4 max value
-//    data->switches.brake_light =0.01f; // 5s period, 0.6 max value
-}
-
 void checkPDUFaults(PDUData *pduData) {
     pduData->faults.battery_fans = HAL_GPIO_ReadPin(FAULT_BATTERY_FANS_GPIOX, FAULT_BATTERY_FANS_PIN);
     pduData->faults.rad_fans = HAL_GPIO_ReadPin(FAULT_RAD_FANS_GPIOX, FAULT_RAD_FANS_PIN);
@@ -290,6 +279,7 @@ void checkPDUFaults(PDUData *pduData) {
     pduData->faults.battery_pump = HAL_GPIO_ReadPin(FAULT_COOLING_PUMP_2_GPIOX, FAULT_COOLING_PUMP_2_PIN);
     pduData->faults.green_status_light = HAL_GPIO_ReadPin(FAULT_GREEN_STATUS_GPIOX, FAULT_GREEN_STATUS_PIN);
     pduData->faults.red_status_light = HAL_GPIO_ReadPin(FAULT_RED_STATUS_GPIOX, FAULT_RED_STATUS_PIN);
+     // TODO: MISSING 2 PINS
 }
 
 
