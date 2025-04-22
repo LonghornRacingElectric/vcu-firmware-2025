@@ -235,9 +235,6 @@ int main(void)
         CAN_periodic(&can1);
 
 
-        /** AESTHETIC, FOR UNVEILING; TODO: REMOVE LATER **/
-        unveiling_light_animation(curtime / 1000.0f, &pduData);
-
         uint16_t v_sense = ADC1_BUFFER[V_SENSE_IDX];
         usb_printf("The V Sense was %f and the latch was %d", pduData.voltages.v_sense, bspd.latch);
         uint32_t tach = HAL_LPTIM_ReadCounter
