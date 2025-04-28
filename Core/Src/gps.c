@@ -10,6 +10,8 @@
 #define NMEA_GPS_BUFFER_SIZE 128 //could prolly be smaller
 GPSData *gps_data; //global variable for gps data
 
+NightCANPacket gpsPacket;
+
 void parseCoordinates(char *nmea_sentence) {
     // Use a copy to avoid modifying the original buffer via strtok
     char sentence_copy[256];
@@ -140,7 +142,7 @@ int send_gps_command(const char *command) {
     return status;
 }
 
-void setup_gps(GPSData *gps) { //call in main outside loop
+void setup_gps(GPSData *gps, NightCANInstance *canInstance) { //call in main outside loop
     int status = send_gps_command("PMTK251,9600"); //set baud rate to 9600
     if (status != HAL_OK){
         return; //there is a problem :( - set up fault thing
@@ -159,6 +161,8 @@ void setup_gps(GPSData *gps) { //call in main outside loop
     }
 
     gps_data = gps;
+
+    gpsPacket = CAN_create_packet(GPS_ID, GPS_FREQ, GPS_DLC);
 }
 
 
@@ -185,3 +189,11 @@ void receiveGPSData() { // call in main, put in loop
 
     }
 }
+
+void send_GPS_CAN() {
+    CAN_writeFloat(GPS_REAR_HEADING_TYPE, &gpsPacket, GPS_REAR_HEADING_BYTE, gps_data->heading, GPS_REAR_HEADING_PREC);
+    CAN_writeFloat(GPS_REAR_LATITUDE_TYPE, &gpsPacket, GPS_REAR_LATITUDE_BYTE, gps_data->latitude, GPS_REAR_LATITUDE_PREC);
+    CAN_writeFloat(GPS_REAR_LONGITUDE_TYPE, &gpsPacket, GPS_REAR_LONGITUDE_BYTE, gps_data->longitude, GPS_REAR_LONGITUDE_PREC);
+    CAN_writeFloat(GPS_REAR_SPEED_TYPE, &gpsPacket, GPS_REAR_SPEED_BYTE, gps_data->speed, GPS_REAR_SPEED_PREC);
+}
+

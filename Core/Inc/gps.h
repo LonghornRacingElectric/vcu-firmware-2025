@@ -7,6 +7,8 @@
 
 #include<stdint.h>
 #include<stdbool.h>
+#include "night_can.h"
+
 
 #define NMEA_BUFFER_SIZE 128
 typedef struct {
@@ -19,13 +21,15 @@ typedef struct {
     int satellites;
 } GPSData;
 
-void setup_gps(GPSData *gps);
+void setup_gps(GPSData *gps, NightCANInstance *canInstance);
 void receiveGPSData();
 bool process_nmea(char *nmea_buffer);
 int send_gps_command(const char *command);
 void calculate_checksum(char *command, char *checksum);
 void parseHeading(char *nmea_sentence);
 void parseCoordinates(char *nmea_sentence);
+
+void send_GPS_CAN();
 
 extern uint8_t GPS_BUFFER[256];
 

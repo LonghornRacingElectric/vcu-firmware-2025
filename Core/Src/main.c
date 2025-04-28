@@ -248,9 +248,9 @@ int main(void)
   lib_timer_init();
 
 
-  NightCANInstance can1 = CAN_new_instance();
-  CAN_Init( &can1, &hfdcan1, 0, 0xFF, 0, 0);
-  pdu_init(&pduData, &can1);
+  NightCANInstance carCAN = CAN_new_instance();
+  CAN_Init(&carCAN, &hfdcan1, 0, 0xFF, 0, 0);
+  pdu_init(&pduData, &carCAN);
 
     VCUModelParameters params = {
             .torque = {
@@ -298,22 +298,21 @@ int main(void)
     HAL_LPTIM_Init(&hlptim2);
 
     HAL_UART_Receive_DMA(&huart4, GPS_BUFFER, GPS_BUFFER_SIZE);
-    NightCANPacket *torqueCommand = inverter_init(&can1, 0, 10.0f);
+    NightCANPacket *torqueCommand = inverter_init(&carCAN, 0, 10.0f);
 
     HAL_LPTIM_Counter_Start(&hlptim2, hlptim2.Instance->ARR);
 
     NightCANPacket speedPacket = CAN_create_packet(0xE0, 1, 2);
-    CAN_AddTxPacket(&can1, &speedPacket);
+    CAN_AddTxPacket(&carCAN, &speedPacket);
 
     NightCANReceivePacket testPacket = CAN_create_receive_packet(0xDD, 0, 1);
-    CAN_addReceivePacket(&can1, &testPacket);
+    CAN_addReceivePacket(&carCAN, &testPacket);
 
     __HAL_UART_CLEAR_FLAG(&huart4, UART_FLAG_ORE);
 
     GPSData gpsData;
 
-    setup_gps(&gpsData);
-
+    setup_gps(&gpsData, &carCAN);
 
     while (1)
     {
@@ -336,27 +335,21 @@ int main(void)
         float test = CAN_readFloat(int16_t, &testPacket, 0, 0.1);
 
         VCUModel_evaluate(&inputs, &outputs, curtime/1000.0f);
-
-        process_gps_dma_buffer();
-
-        process_nmea(GPS_BUFFER);
-
-        usb_printf("Got the status from GPS: %d from the data %f, %f\r\n%s", gpsData.status, gpsData.latitude, gpsData.longitude, GPS_BUFFER);
-
         receive_periodic();
         bspd_periodic(bspdaddr);
         pdu_periodic(&pduData);
-        CAN_periodic(&can1);
+        CAN_periodic(&carCAN);
 
-
-        uint16_t v_sense = ADC1_BUFFER[V_SENSE_IDX];
-//        usb_printf("The V Sense was %f and the latch was %d", pduData.voltages.v_sense, bspd.latch);
-        uint32_t tach = HAL_LPTIM_ReadCounter
-                (&hlptim2);
-        unveiling_light_animation(lib_timer_elapsed_ms() / 1000.0f, &pduData);
+        /** ---- COOLING TACHOMETERS ---- */
+        uint32_t tach = HAL_LPTIM_ReadCounter(&hlptim2);
         float rpm = tach / 30.0f;
 
-    /* USER CODE END WHILE */
+        /** ---- GPS ---- */
+        process_gps_dma_buffer();
+        send_GPS_CAN();
+        process_nmea(GPS_BUFFER);
+
+        /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
     }
