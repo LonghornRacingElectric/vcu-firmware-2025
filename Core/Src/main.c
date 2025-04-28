@@ -302,21 +302,13 @@ int main(void)
 
     HAL_LPTIM_Counter_Start(&hlptim2, hlptim2.Instance->ARR);
 
-    NightCANPacket speedPacket = CAN_create_packet(0xE0, 1, 2);
-    CAN_AddTxPacket(&carCAN, &speedPacket);
-
-    NightCANReceivePacket testPacket = CAN_create_receive_packet(0xDD, 0, 1);
-    CAN_addReceivePacket(&carCAN, &testPacket);
-
     __HAL_UART_CLEAR_FLAG(&huart4, UART_FLAG_ORE);
-
     GPSData gpsData;
 
     setup_gps(&gpsData, &carCAN);
 
     while (1)
     {
-
         uint32_t curtime = lib_timer_delta_ms();
         led_rainbow(curtime / 1000.0f);
 
@@ -328,11 +320,6 @@ int main(void)
         inputs.apps.pedal1Percent = pct;
         inputs.apps.pedal2Percent = pct;
         inputs.drive_switch_enabled = checkDrive();
-
-        CAN_writeFloat(int16_t, &speedPacket, 0, lib_timer_elapsed_ms() / 1000.0f, 0.1);
-
-//        float test = 0.0f;
-        float test = CAN_readFloat(int16_t, &testPacket, 0, 0.1);
 
         VCUModel_evaluate(&inputs, &outputs, curtime/1000.0f);
         receive_periodic();
