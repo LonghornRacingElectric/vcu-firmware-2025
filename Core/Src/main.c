@@ -287,7 +287,6 @@ int main(void)
 
     // set up the vcu model with the parameters
     VCUModel_set_parameters(&params);
-//    HAL_TIM_PWM_Start(&htim12, TIM_CHANNEL_2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
