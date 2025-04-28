@@ -10,114 +10,135 @@
 #define NMEA_GPS_BUFFER_SIZE 128 //could prolly be smaller
 GPSData *gps_data; //global variable for gps data
 
-NightCANPacket gpsPacket;
+const double KNOTS_TO_MPH = 1.15077945;
 
-void parseCoordinates(char *nmea_sentence) {
+
+NightCANPacket gpsPacket;
+// Updated function to parse Coordinates, Speed (MPH), and Heading from GPRMC
+void parseGPRMC(char *nmea_sentence) {
     // Use a copy to avoid modifying the original buffer via strtok
     char sentence_copy[256];
     strncpy(sentence_copy, nmea_sentence, sizeof(sentence_copy) - 1);
-    sentence_copy[sizeof(sentence_copy) - 1] = '\0';
+    sentence_copy[sizeof(sentence_copy) - 1] = '\0'; // Ensure null termination
 
     char *token;
     int field_count = 0;
     bool lat_set = false;
     bool lon_set = false;
+    bool speed_set = false;
+    bool heading_set = false;
 
     // Temporary variables to hold NMEA format values before conversion
     double nmea_lat = 0.0;
     double nmea_lon = 0.0;
+    double speed_knots = 0.0;
+    double track_angle = 0.0;
 
     token = strtok(sentence_copy, ",");
     while (token != NULL) {
+        // Check for empty tokens, treat them as 0 or handle as needed
+        double current_val = (strlen(token) > 0) ? atof(token) : 0.0;
+
         switch (field_count) {
             case 2: // Status (A=Active, V=Void)
                 if (strlen(token) > 0) {
                     gps_data->status = token[0];
                 } else {
-                    gps_data->status = 'V';
+                    gps_data->status = 'V'; // Default to Void if empty
                 }
                 break;
             case 3: // Latitude (DDMM.MMMM)
-                nmea_lat = atof(token);
+                nmea_lat = current_val;
                 lat_set = true;
                 break;
             case 4: // Latitude hemisphere (N/S)
                 if (lat_set && strlen(token) > 0 && token[0] == 'S') {
-                    nmea_lat = -nmea_lat; // Apply sign to NMEA value
+                    nmea_lat = -nmea_lat; // Apply sign
                 }
                 break;
             case 5: // Longitude (DDDMM.MMMM)
-                nmea_lon = atof(token);
+                nmea_lon = current_val;
                 lon_set = true;
                 break;
             case 6: // Longitude hemisphere (E/W)
                 if (lon_set && strlen(token) > 0 && token[0] == 'W') {
-                    nmea_lon = -nmea_lon; // Apply sign to NMEA value
+                    nmea_lon = -nmea_lon; // Apply sign
                 }
                 break;
+            case 7: // Speed over ground (Knots)
+                speed_knots = current_val;
+                speed_set = true;
+                break;
+            case 8: // Track angle / Course over ground (Degrees True)
+                track_angle = current_val;
+                heading_set = true;
+                break;
+                // Add cases for time (1), date (9), mode (12) if needed
         }
         token = strtok(NULL, ",");
         field_count++;
     }
 
-    // --- CONVERSION TO DECIMAL DEGREES ---
+    // --- CONVERSIONS AND ASSIGNMENTS ---
+
+    // Position (Decimal Degrees)
     if (lat_set) {
         double degrees = floor(fabs(nmea_lat) / 100.0);
         double minutes = fmod(fabs(nmea_lat), 100.0);
-        // Apply the original sign after calculation
         gps_data->latitude = copysign(degrees + (minutes / 60.0), nmea_lat);
     } else {
-        gps_data->latitude = 0.0; // Or some other default/invalid indicator
+        gps_data->latitude = 0.0; // Or NAN, or keep old value
     }
 
     if (lon_set) {
         double degrees = floor(fabs(nmea_lon) / 100.0);
         double minutes = fmod(fabs(nmea_lon), 100.0);
-        // Apply the original sign after calculation
         gps_data->longitude = copysign(degrees + (minutes / 60.0), nmea_lon);
     } else {
-        gps_data->longitude = 0.0; // Or some other default/invalid indicator
+        gps_data->longitude = 0.0; // Or NAN, or keep old value
+    }
+
+    // Speed (Convert Knots to MPH)
+    if (speed_set) {
+        gps_data->speed = speed_knots * KNOTS_TO_MPH;
+    } else {
+        gps_data->speed = 0.0; // Default if not set
+    }
+
+    // Heading (Degrees True)
+    if (heading_set) {
+        gps_data->heading = track_angle;
+    } else {
+        gps_data->heading = 0.0; // Default if not set
     }
 }
 
-// parseHeading and process_nmea remain the same as the previous corrected version
-// (assuming parseHeading doesn't need coordinate conversion)
-
+// This function is NO LONGER NEEDED if only using GPRMC
+/*
 void parseHeading(char *nmea_sentence){
-    char sentence_copy[256];
-    strncpy(sentence_copy, nmea_sentence, sizeof(sentence_copy) - 1);
-    sentence_copy[sizeof(sentence_copy) - 1] = '\0';
-
-    char *token;
-    int field_count = 0;
-    token = strtok(sentence_copy, ",");
-    while (token != NULL){
-        switch (field_count){
-            case 1:
-                gps_data->heading = atof(token);
-                break;
-            case 7:
-                gps_data->speed = atof(token); //km/hr
-                break;
-        }
-        token = strtok(NULL, ",");
-        field_count++;
-    }
+    // ... (old code) ...
 }
+*/
 
+// Simplified process_nmea to only handle GPRMC
 bool process_nmea(char *nmea_GPS_BUFFER) {
-    if ((strncmp(nmea_GPS_BUFFER, "$GPRMC", 6) == 0)){
-        if (gps_data) {
-            parseCoordinates(nmea_GPS_BUFFER);
-        } else { return false; }
-        return true;
+    // Check for $GPRMC sentence
+    if (strncmp(nmea_GPS_BUFFER, "$GPRMC", 6) == 0) {
+        if (gps_data != NULL) {
+            // Use the updated function name
+            parseGPRMC(nmea_GPS_BUFFER);
+            return true; // Indicate successful processing
+        } else {
+            // Handle error: gps_data pointer is NULL
+            fprintf(stderr, "Error: gps_data pointer is NULL in process_nmea.\n");
+            return false;
+        }
     }
-    if (strncmp(nmea_GPS_BUFFER, "$GPVTG", 6) == 0){
-        if (gps_data) {
-            parseHeading(nmea_GPS_BUFFER);
-        } else { return false; }
-        return true;
-    }
+
+    // If you needed to parse other sentences like GGA, add checks here
+    // if (strncmp(nmea_GPS_BUFFER, "$GPGGA", 6) == 0) { ... }
+
+    // Sentence type not recognized or not handled
     return false;
 }
 
@@ -143,7 +164,7 @@ int send_gps_command(const char *command) {
 }
 
 void setup_gps(GPSData *gps, NightCANInstance *canInstance) { //call in main outside loop
-    int status = send_gps_command("PMTK251,9600"); //set baud rate to 9600
+    int status = send_gps_command("PMTK251,115200"); //set baud rate to 9600
     if (status != HAL_OK){
         return; //there is a problem :( - set up fault thing
     }
@@ -151,7 +172,7 @@ void setup_gps(GPSData *gps, NightCANInstance *canInstance) { //call in main out
     if (status != HAL_OK){
         return;
     }
-    status = send_gps_command("PMTK220,1000"); //set update rate to 1Hz
+    status = send_gps_command("PMTK220,100"); //set update rate to 10Hz
     if (status != HAL_OK){
         return;
     }

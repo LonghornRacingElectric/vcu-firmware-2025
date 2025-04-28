@@ -77,9 +77,7 @@ static void MPU_Config(void);
 /* USER CODE BEGIN 0 */
 bool isFinished;
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
-//    if(hadc == &hadc1) {
     isFinished = 1;
-//    }
 }
 
 #define GPS_BUFFER_SIZE 256       // Size of the circular DMA buffer (power of 2 often good, but not required)
@@ -302,7 +300,7 @@ int main(void)
     HAL_LPTIM_Counter_Start(&hlptim2, hlptim2.Instance->ARR);
 
     __HAL_UART_CLEAR_FLAG(&huart4, UART_FLAG_ORE);
-    GPSData gpsData;
+    GPSData gpsData = {};
 
     setup_gps(&gpsData, &carCAN);
 
@@ -333,9 +331,12 @@ int main(void)
         /** ---- GPS ---- */
         process_gps_dma_buffer();
         send_GPS_CAN();
-        process_nmea(GPS_BUFFER);
+        process_nmea(current_nmea_message);
+        usb_printf("GPS: %f, %f, %f, %d", gpsData.latitude, gpsData.longitude, gpsData.speed, gpsData.fix, gpsData.heading);
+//        usb_printf("%s", GPS_BUFFER);
 
-        /* USER CODE END WHILE */
+
+    /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
     }
