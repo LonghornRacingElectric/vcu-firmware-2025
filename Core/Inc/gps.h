@@ -19,7 +19,7 @@ typedef struct {
     int satellites;
 } GPSData;
 
-void setup_gps();
+void setup_gps(GPSData *gps);
 void receiveGPSData();
 bool process_nmea(char *nmea_buffer);
 int send_gps_command(const char *command);
@@ -27,6 +27,6 @@ void calculate_checksum(char *command, char *checksum);
 void parseHeading(char *nmea_sentence);
 void parseCoordinates(char *nmea_sentence);
 
-
+extern uint8_t GPS_BUFFER[256];
 
 #endif //VCU_FIRMWARE_2025_GPS_H

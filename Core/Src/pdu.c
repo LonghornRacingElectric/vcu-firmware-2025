@@ -253,9 +253,11 @@ float normalizeLightWithVoltage(float nominalPctAt24V, float curVoltage) {
 }
 
 void setPWMLights(float brake_light, float green_status, float red_status, float curVoltage) {
-    PWM_BRAKE_LIGHT_TIM.Instance->PWM_BRAKE_LIGHT = (uint32_t) normalizeLightWithVoltage(brake_light, curVoltage) * PWM_BRAKE_LIGHT_TIM.Instance->ARR;
-    PWM_GREEN_STATUS_TIM.Instance->PWM_GREEN_STATUS = (uint32_t) normalizeLightWithVoltage(green_status, curVoltage) * PWM_GREEN_STATUS_TIM.Instance->ARR;
-    PWM_RED_STATUS_TIM.Instance->PWM_RED_STATUS = (uint32_t) normalizeLightWithVoltage(red_status, curVoltage) * PWM_RED_STATUS_TIM.Instance->ARR;
+    PWM_BRAKE_LIGHT_TIM.Instance->PWM_BRAKE_LIGHT = normalizeLightWithVoltage(brake_light, curVoltage) * PWM_BRAKE_LIGHT_TIM.Instance->ARR;
+    PWM_GREEN_STATUS_TIM.Instance->PWM_GREEN_STATUS = normalizeLightWithVoltage(green_status, curVoltage) * PWM_GREEN_STATUS_TIM.Instance->ARR;
+    PWM_RED_STATUS_TIM.Instance->PWM_RED_STATUS = normalizeLightWithVoltage(red_status, curVoltage) * PWM_RED_STATUS_TIM.Instance->ARR;
+
+//    usb_printf("The output of the normalized voltage was %f compared to 0.34f: %f", normalizeLightWithVoltage(green_status, curVoltage), normalizeLightWithVoltage(0.34f, curVoltage));
 }
 
 void pdu_periodic(PDUData *pduData) {
@@ -314,9 +316,10 @@ void writePDUToCAN(PDUData *data) {
 }
 
 void unveiling_light_animation(float dt, PDUData *data) {
-    data->switches.red_status_light = breathing_animation(lib_timer_elapsed_ms()/1000.0f, 5.5f, 0.00005f, 0.0003f);; // off
-    data->switches.green_status_light = breathing_animation(lib_timer_elapsed_ms()/1000.0f, 5.5f, 0.005f, 0.0001f); // 5s period, 0.4 max value
-    data->switches.brake_light = breathing_animation(lib_timer_elapsed_ms()/1000.0f, 5.5f, 0.002f, 0.0001f); // 5s period, 0.6 max value
+//    data->switches.red_status_light = breathing_animation(lib_timer_elapsed_ms()/1000.0f, 5.5f, 0.00005f, 0.0003f);; // off
+//    data->switches.green_status_light = breathing_animation(lib_timer_elapsed_ms()/1000.0f, 5.5f, 0.005f, 0.0001f); // 5s period, 0.4 max value
+    data->switches.green_status_light = 0.34f;
+//    data->switches.brake_light = breathing_animation(lib_timer_elapsed_ms()/1000.0f, 5.5f, 0.002f, 0.0001f); // 5s period, 0.6 max value
 }
 
 void checkPDUFaults(PDUData *pduData) {
