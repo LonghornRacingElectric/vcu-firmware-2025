@@ -330,7 +330,8 @@ int main(void)
         drive_system_periodic(&inputs);
 
         /** ---- Inverter ---- */
-        inverter_update_all_fields(outputs.torque.torqueRequest)
+        // Also updates the direction of the inverter's output
+        inverter_update_torque_request(outputs.torque.torqueRequest);
 
         /** ---- COOLING TACHOMETERS ---- */
         // Never validated. TODO: DON'T USE (not a todo, marked so it's highlighted)

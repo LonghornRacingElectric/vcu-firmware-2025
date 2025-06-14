@@ -48,5 +48,8 @@ NightCANPacket *inverter_init(NightCANInstance *can, uint8_t initial_direction, 
 
 void inverter_update_torque_request(float torque_request) {
     updateTorqueRequest(torque_request);
-    updateInverterEnable(torque_request > 0 ? 1 : 0);
+    updateInverterEnable(torque_request != 0 ? 1 : 0);
+
+    // TODO; VERIFY THIS WORKS
+    updateInverterDirection(0);
 };
