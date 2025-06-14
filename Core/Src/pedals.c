@@ -7,16 +7,26 @@
 static NightCANReceivePacket apps;
 
 void pedals_init(FDCAN_HandleTypeDef *hcan, NightCANInstance *canInstance) {
-    // If we miss 5 packets, we're cooked, give up.
-    apps = CAN_create_receive_packet(APPS_VOLTAGES_ID, APPS_VOLTAGES_FREQ * 5, APPS_VOLTAGES_DLC);
+    // If we miss packets for 2 whole seconds, we're cooked, give up.
+    apps = CAN_create_receive_packet(APPS_VOLTAGES_ID, 2000, APPS_VOLTAGES_DLC);
     CAN_addReceivePacket(canInstance, &apps);
 };
 
 void pedals_periodic(VCUModelInputs *vcuModelInputs) {
     if(apps.is_timed_out) {
-        vcuModelInputs->apps.pedal2Percent = 0;
+        // OOR. Error! Disable the car.
         vcuModelInputs->apps.pedal1Percent = 0;
+        vcuModelInputs->apps.pedal2Percent = 0;
+
+        vcuModelInputs->apps.pedal1Voltage = 0;
+        vcuModelInputs->apps.pedal2Voltage = 0;
     } else {
-        vcuModelInputs->apps.pedal1Voltage = CAN_readFloat(APPS_VOLTAGES_APPS1_VOLTAGE_TYPE, &apps);
+        // Update voltages
+        vcuModelInputs->apps.pedal1Voltage = CAN_readFloat(APPS_VOLTAGES_APPS1_VOLTAGE_TYPE, &apps,
+                                                           APPS_VOLTAGES_APPS1_VOLTAGE_BYTE,
+                                                           APPS_VOLTAGES_APPS1_VOLTAGE_PREC);
+        vcuModelInputs->apps.pedal2Voltage = CAN_readFloat(APPS_VOLTAGES_APPS2_VOLTAGE_TYPE, &apps,
+                                                           APPS_VOLTAGES_APPS2_VOLTAGE_BYTE,
+                                                           APPS_VOLTAGES_APPS2_VOLTAGE_PREC);
     }
 };

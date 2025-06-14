@@ -43,6 +43,7 @@
 #include "inverter.h"
 #include "gps.h"
 #include "drive.h"
+#include "pedals.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -251,6 +252,7 @@ int main(void)
   CAN_Init(&carCAN, &hfdcan1, 0, 0xFF, 0, 0);
   pdu_init(&pduData, &carCAN);
   drive_system_init(&hfdcan1, &carCAN);
+  pedals_init(&hfdcan1, &carCAN);
 
     VCUModelParameters params = {
             .torque = {
@@ -321,9 +323,17 @@ int main(void)
         receive_periodic();
         bspd_periodic(bspdaddr);
         pdu_periodic(&pduData);
-        CAN_periodic(&carCAN);
+        pedals_periodic(&inputs);
+
+        /** ---- Drive System ---- */
+        // Updates Drive Switch and Wheel Speeds (note that wheel speeds are not used in the model)
+        drive_system_periodic(&inputs);
+
+        /** ---- Inverter ---- */
+        inverter_update_all_fields(outputs.torque.torqueRequest)
 
         /** ---- COOLING TACHOMETERS ---- */
+        // Never validated. TODO: DON'T USE (not a todo, marked so it's highlighted)
         uint32_t tach = HAL_LPTIM_ReadCounter(&hlptim2);
 
         /** ---- GPS ---- */
@@ -331,8 +341,11 @@ int main(void)
         send_GPS_CAN();
         process_nmea(current_nmea_message);
 
-        /** ---- Drive System ---- */
-        drive_system_periodic(&inputs);
+        /** ---- CAN SUBSYSTEM PERIODIC ---- */
+        // Unconditionally sends ALL CAN Packets that have been marked for sending
+        // IFF the time quanta reached
+        // ALSO READS ALL CAN packets -- these are made available in the next main loop within the structs
+        CAN_periodic(&carCAN);
 
     /* USER CODE END WHILE */
 
