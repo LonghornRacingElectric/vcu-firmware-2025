@@ -12,7 +12,7 @@
 void drive_system_init(FDCAN_HandleTypeDef *hcan, NightCANInstance *canInstance);
 
 /** Will call the other methods to update all inputs to the model */
-void drive_system_periodic();
+void drive_system_periodic(VCUModelInputs *vcuModelInputs);
 
 /** Read the correct packet from CAN and update the drive switch setting */
 void updateDriveSwitch(VCUModelInputs *vcuModelInputs);

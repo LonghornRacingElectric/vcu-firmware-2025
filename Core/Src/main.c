@@ -42,6 +42,7 @@
 #include "night_can.h"
 #include "inverter.h"
 #include "gps.h"
+#include "drive.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -249,6 +250,7 @@ int main(void)
   NightCANInstance carCAN = CAN_new_instance();
   CAN_Init(&carCAN, &hfdcan1, 0, 0xFF, 0, 0);
   pdu_init(&pduData, &carCAN);
+  drive_system_init(&hfdcan1, &carCAN);
 
     VCUModelParameters params = {
             .torque = {
@@ -312,11 +314,8 @@ int main(void)
         uint16_t bse3 = ADC1_BUFFER[BSE3_IDX];
 
         float float_bse3 = ((float) bse3) * 15.1f / 10.0f * 3.3f / 65535.0f; // voltage at i/o (5v scale)
-        float pct = (float_bse3 - (0.22f*5.0f)) / (0.62f*5.0f);
 
-        inputs.apps.pedal1Percent = pct;
-        inputs.apps.pedal2Percent = pct;
-        inputs.drive_switch_enabled = checkDrive();
+        float pct = (float_bse3 - (0.22f*5.0f)) / (0.62f*5.0f);
 
         VCUModel_evaluate(&inputs, &outputs, curtime/1000.0f);
         receive_periodic();
@@ -326,15 +325,14 @@ int main(void)
 
         /** ---- COOLING TACHOMETERS ---- */
         uint32_t tach = HAL_LPTIM_ReadCounter(&hlptim2);
-        float rpm = tach / 30.0f;
 
         /** ---- GPS ---- */
         process_gps_dma_buffer();
         send_GPS_CAN();
         process_nmea(current_nmea_message);
-        usb_printf("GPS: %f, %f, %f, %d", gpsData.latitude, gpsData.longitude, gpsData.speed, gpsData.fix, gpsData.heading);
-//        usb_printf("%s", GPS_BUFFER);
 
+        /** ---- Drive System ---- */
+        drive_system_periodic(&inputs);
 
     /* USER CODE END WHILE */
 
