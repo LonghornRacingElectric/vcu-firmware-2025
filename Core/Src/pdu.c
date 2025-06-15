@@ -276,11 +276,14 @@ void pdu_periodic(PDUData *pduData) {
 //    PWM_COOLING_PUMP_2.Instance->PWM_COOLING_PUMP_2_CH =  pduData->switches.cooling_pump_2 * PWM_COOLING_PUMP_1.Instance->ARR; // testing with percentages
     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
     PWM_BATTERY_FANS_TIM.Instance->PWM_BATTERY_FANS = pduData->switches.battery_fans * PWM_BATTERY_FANS_TIM.Instance->ARR;
-    PWR_RADIATOR_FANS_TIM.Instance->PWR_RADIATOR_FANS = 1.0f * PWR_RADIATOR_FANS_TIM.Instance->ARR;
 
+    PWR_RADIATOR_FANS_TIM.Instance->PWR_RADIATOR_FANS = 1.0f * PWR_RADIATOR_FANS_TIM.Instance->ARR;
     PWM_RADIATOR_FANS_TIM.Instance->PWM_RADIATOR_FANS = pduData->switches.rad_fans * PWM_RADIATOR_FANS_TIM.Instance->ARR;
 
     /* Lights */
+    pduData->switches.brake_light = ((lib_timer_elapsed_ms() / 200) % 2) * 0.002f;
+    pduData->switches.red_status_light = ((lib_timer_elapsed_ms() / 200) % 2) * 0.0005f;
+    pduData->switches.green_status_light = (1-((lib_timer_elapsed_ms() / 200) % 2)) * 0.005f;
     setPWMLights(pduData->switches.brake_light, pduData->switches.green_status_light,
                  pduData->switches.red_status_light, pduData->voltages.v_sense);
 

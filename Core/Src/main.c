@@ -42,8 +42,7 @@
 #include "night_can.h"
 #include "inverter.h"
 #include "gps.h"
-#include "drive.h"
-#include "pedals.h"
+#include "sensors.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -239,6 +238,8 @@ int main(void)
   PDUData pduData = {};
   BSPDOutputs bspd = {};
   BSPDOutputs *bspdaddr = &bspd;
+  SensorData sensors = {};
+  InverterData inverterData = {};
 
   /* Initialize Structures/Subsystems */
   led_init(TIM15, &htim15, 2); // missing a channel on the vcu
@@ -249,10 +250,16 @@ int main(void)
 
 
   NightCANInstance carCAN = CAN_new_instance();
-  CAN_Init(&carCAN, &hfdcan1, 0, 0xFF, 0, 0);
+  CAN_Init(&carCAN, &hfdcan1, 0, 0x7FF, 0, 0);
   pdu_init(&pduData, &carCAN);
-  drive_system_init(&hfdcan1, &carCAN);
-  pedals_init(&hfdcan1, &carCAN);
+  sensors_init(&hfdcan1, &carCAN);
+  inverter_init(&carCAN);
+
+  NightCANReceivePacket hvcPacket = CAN_create_receive_packet(INDICATORS_SHUTDOWN_STATUS_ID,
+  INDICATORS_SHUTDOWN_STATUS_FREQ*5, INDICATORS_SHUTDOWN_STATUS_DLC);
+  // NightCANReceivePacket hvcPacket = CAN_create_receive_packet(BATTERY_PACK_STATUS_ID,
+  //   BATTERY_PACK_STATUS_FREQ*5, BATTERY_PACK_STATUS_DLC);
+  CAN_addReceivePacket(&carCAN, &hvcPacket);
 
     VCUModelParameters params = {
             .torque = {
@@ -298,15 +305,14 @@ int main(void)
     HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, GPIO_PIN_SET);
     HAL_LPTIM_Init(&hlptim2);
 
-    HAL_UART_Receive_DMA(&huart4, GPS_BUFFER, GPS_BUFFER_SIZE);
-    NightCANPacket *torqueCommand = inverter_init(&carCAN, 0, 10.0f);
+    // HAL_UART_Receive_DMA(&huart4, GPS_BUFFER, GPS_BUFFER_SIZE);
 
-    HAL_LPTIM_Counter_Start(&hlptim2, hlptim2.Instance->ARR);
+    // HAL_LPTIM_Counter_Start(&hlptim2, hlptim2.Instance->ARR);
 
-    __HAL_UART_CLEAR_FLAG(&huart4, UART_FLAG_ORE);
-    GPSData gpsData = {};
+    // __HAL_UART_CLEAR_FLAG(&huart4, UART_FLAG_ORE);
+    // GPSData gpsData = {};
 
-    setup_gps(&gpsData, &carCAN);
+    // setup_gps(&gpsData, &carCAN);
 
     while (1)
     {
@@ -314,39 +320,46 @@ int main(void)
         led_rainbow(curtime / 1000.0f);
 
         uint16_t bse3 = ADC1_BUFFER[BSE3_IDX];
-
         float float_bse3 = ((float) bse3) * 15.1f / 10.0f * 3.3f / 65535.0f; // voltage at i/o (5v scale)
-
-        float pct = (float_bse3 - (0.22f*5.0f)) / (0.62f*5.0f);
 
         VCUModel_evaluate(&inputs, &outputs, curtime/1000.0f);
         receive_periodic();
         bspd_periodic(bspdaddr);
         pdu_periodic(&pduData);
-        pedals_periodic(&inputs);
-
-        /** ---- Drive System ---- */
-        // Updates Drive Switch and Wheel Speeds (note that wheel speeds are not used in the model)
-        drive_system_periodic(&inputs);
+        sensors_periodic(&sensors, &inputs);
+        inverter_periodic(&inverterData);
 
         /** ---- Inverter ---- */
         // Also updates the direction of the inverter's output
         inverter_update_torque_request(outputs.torque.torqueRequest);
 
         /** ---- COOLING TACHOMETERS ---- */
-        // Never validated. TODO: DON'T USE (not a todo, marked so it's highlighted)
-        uint32_t tach = HAL_LPTIM_ReadCounter(&hlptim2);
+        // Never validated.
+        // uint32_t tach = HAL_LPTIM_ReadCounter(&hlptim2);
 
         /** ---- GPS ---- */
-        process_gps_dma_buffer();
-        send_GPS_CAN();
-        process_nmea(current_nmea_message);
+        // process_gps_dma_buffer();
+        // send_GPS_CAN();
+        // process_nmea(current_nmea_message);
 
         /** ---- CAN SUBSYSTEM PERIODIC ---- */
         // Unconditionally sends ALL CAN Packets that have been marked for sending
         // IFF the time quanta reached
         // ALSO READS ALL CAN packets -- these are made available in the next main loop within the structs
         CAN_periodic(&carCAN);
+
+        static int x = 0;
+        if((x++) % 2000 == 0)
+        {
+
+          int bmsError = hvcPacket.data[0];
+          int imdError = hvcPacket.data[1];
+          usb_printf("bms=%d, imd=%d", bmsError, imdError);
+          // usb_printf("steering angle: %f", sensors.pedalBox.columnAngle);
+          // usb_printf("apps1: %fV\t apps2: %fV", sensors.pedalBox.appsVoltage1, sensors.pedalBox.appsVoltage2);
+          // usb_printf("angle: %fdeg\t rpm: %frpm", inverterData.electricalAngle, inverterData.motorRpm);
+          // HAL_Delay(1);
+        }
 
     /* USER CODE END WHILE */
 
