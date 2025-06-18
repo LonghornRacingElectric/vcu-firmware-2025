@@ -267,31 +267,34 @@ int main(void)
   NightCANReceivePacket hvcPacket = CAN_create_receive_packet(INDICATORS_SHUTDOWN_STATUS_ID,
                                                               INDICATORS_SHUTDOWN_STATUS_FREQ * 5,
                                                               INDICATORS_SHUTDOWN_STATUS_DLC);
+  NightCANPacket buzz_pkt = CAN_create_packet(0x1A0, 100, 1);
+
   // TODO contactor state packet in hvc file
   // NightCANReceivePacket hvcPacket = CAN_create_receive_packet(BATTERY_PACK_STATUS_ID,
   //   BATTERY_PACK_STATUS_FREQ*5, BATTERY_PACK_STATUS_DLC);
   CAN_addReceivePacket(&carCAN, &hvcPacket);
+  CAN_AddTxPacket(&carCAN, &buzz_pkt);
 
   VcuModelParameters params = {
     .apps = {
-      .apps1VoltageMin = 2.5f, // TODO tune pedals
-      .apps1VoltageMax = 2.5f,
-      .apps2VoltageMin = 2.5f,
-      .apps2VoltageMax = 2.5f,
+      .apps1VoltageMin = 1.320f, // TODO tune pedals
+      .apps1VoltageMax = 2.250f,
+      .apps2VoltageMin = 0.610f,
+      .apps2VoltageMax = 1.100f,
 
       .appsMaxImplausibilityTime = 0.100f,
       .allowedPlausibilityRange = 0.10f,
-      .appsDeadzoneBottomPercent = 0.0f,
-      .appsDeadzoneTopPercent = 0.0f,
+      .appsDeadzoneBottomPercent = 0.03f,
+      .appsDeadzoneTopPercent = 0.05f,
       .appsLowPassFilterTimeConstant = 0.0f,
     },
     .bse = {
-      .bseMinAllowableVoltage = 0.35f,
+      .bseMinAllowableVoltage = 0.3f,
       .bseMaxAllowableVoltage = 4.5f,
-      .bseZeroPressureVoltage = 0.5f,
+      .bseZeroPressureVoltage = 0.4f,
       .bseMaxPressureVoltage = 4.5f,
       .bseMaxPressure = 3000.0f,
-      .bseBrakingPressure = 100.0f,
+      .bseBrakingPressure = 2.0f, // psi
       .bseMaxImplausibilityTime = 0.100f,
       .bseLowPassFilterTimeConstant = 0.0f,
     },
@@ -299,7 +302,9 @@ int main(void)
       .stomppAppsRecoveryThreshold = 0.05f,
       .stomppAppsCutoffThreshold = 0.25f
     },
-
+    // .parkDrive = {
+    //   .buzzerDuration = 1.0f,
+    // },
     .torque = {
       .mapPedalToTorqueRequest = {
         .x0 = 0.0f,
@@ -308,10 +313,6 @@ int main(void)
         .xP = 1.0f,
         .yP = 220.0f
       }
-    },
-    .brake_light = {
-      .bseLightOnPercent = 0.5f,
-      .bseTimeConstant = 0.8f
     }
   };
 
@@ -346,7 +347,6 @@ int main(void)
     // uint16_t bse3 = ADC1_BUFFER[BSE3_IDX];
     // float float_bse3 = ((float)bse3) * 15.1f / 10.0f * 3.3f / 65535.0f; // voltage at i/o (5v scale)
 
-    VcuModel_evaluate(&vcuModelInputs, &vcuModelOutputs, deltaTime);
     receive_periodic();
     bspd_periodic(bspdaddr);
     pdu_periodic(&pduData);
@@ -355,6 +355,11 @@ int main(void)
 
     /** ---- Inverter ---- */
     inverter_update_torque_request(vcuModelOutputs.torqueCommand);
+
+    vcuModelInputs.bseFVoltage = vcuModelInputs.bseRVoltage; // TODO lmao
+    vcuModelInputs.tractiveSystemReady = true; // TODO lmao2
+
+    VcuModel_evaluate(&vcuModelInputs, &vcuModelOutputs, deltaTime);
 
     /** ---- COOLING TACHOMETERS ---- */
     // Never validated.
@@ -370,6 +375,23 @@ int main(void)
     // IFF the time quanta reached
     // ALSO READS ALL CAN packets -- these are made available in the next main loop within the structs
     CAN_periodic(&carCAN);
+    buzz_pkt.data[0] = vcuModelOutputs.buzzerEnabled;
+    pduData.switches.brake_light = vcuModelOutputs.brakeLightPercent;
+
+    bool bmsError = hvcPacket.data[0];
+    bool imdError = hvcPacket.data[1];
+    if(hvcPacket.is_timed_out)
+    {
+      pduData.switches.green_status_light = ((lib_timer_elapsed_ms() / 200) % 2) * 0.005f;
+      pduData.switches.red_status_light = ((lib_timer_elapsed_ms() / 200) % 2) * 0.005f;
+    } else if (bmsError | imdError)
+    {
+      pduData.switches.green_status_light = 0.005f;
+      pduData.switches.red_status_light = 0.0f;
+    } else {
+      pduData.switches.green_status_light = 0.0f;
+      pduData.switches.red_status_light = ((lib_timer_elapsed_ms() / 200) % 2) * 0.005f;
+    }
 
     static int x = 0;
     if ((x++) % 2000 == 0)
@@ -380,9 +402,14 @@ int main(void)
       // usb_printf("steering angle: %f", sensors.pedalBox.columnAngle);
       // usb_printf("apps1: %fV\t apps2: %fV", sensors.pedalBox.appsVoltage1, sensors.pedalBox.appsVoltage2);
       // usb_printf("angle: %fdeg\t rpm: %frpm", inverterData.electricalAngle, inverterData.motorRpm);
-      usb_printf("status: %d, apps1: %.2f%%, apps2: %.2f%%, apps: %.2f%%",
-        vcuModelOutputs.appsStatus, vcuModelOutputs.apps1Percent, vcuModelOutputs.apps2Percent, vcuModelOutputs.appsPercent);
+      // usb_printf("status: %d, bseF: %.2fV, bseR: %.2fV, bseF: %.2fpsi, bseR: %.2fpsi, bseAvg: %.2fpsi, pressed: %d",
+      // vcuModelOutputs.bseStatus, vcuModelInputs.bseFVoltage, vcuModelInputs.bseRVoltage, vcuModelOutputs.bseFPressure, vcuModelOutputs.bseRPressure, vcuModelOutputs.bseAvgPressure, vcuModelOutputs.isDriverBraking);
+      // usb_printf("status: %d, apps1: %.3fV, apps2: %.3fV, apps1: %.2f%%, apps2: %.2f%%, apps: %.2f%%",
+      //   vcuModelOutputs.appsStatus, sensors.pedalBox.appsVoltage1, sensors.pedalBox.appsVoltage2, vcuModelOutputs.apps1Percent*100, vcuModelOutputs.apps2Percent*100, vcuModelOutputs.appsPercent*100);
       // HAL_Delay(1);
+      // usb_printf("time: %.6fs", deltaTime);
+      // usb_printf("apps: %.2f, appsStompp : %.2f, braking: %d, switch: %d, drive: %d, buzz: %d", vcuModelOutputs.appsPercent, vcuModelOutputs.appsPercentStompp, vcuModelOutputs.isDriverBraking, vcuModelInputs.driveSwitchEnabled, vcuModelOutputs.driveStateEnabled, vcuModelOutputs.buzzerEnabled);
+      // usb_printf("state: %d, torque: %.2f, enable: %d", vcuModelOutputs.driveStateEnabled, vcuModelOutputs.torqueCommand, vcuModelOutputs.enableInverter);
     }
 
     /* USER CODE END WHILE */

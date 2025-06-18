@@ -71,12 +71,13 @@ void sensors_init(FDCAN_HandleTypeDef* hcan, NightCANInstance* canInstance)
   steeringAngle = CAN_create_receive_packet(RACK_STEERING_ID, RACK_STEERING_FREQ * 5, RACK_STEERING_DLC);
 
 
-  driveSwitch = CAN_create_receive_packet(0x021,
+  driveSwitch = CAN_create_receive_packet(1738,
                                           100 * 5,
                                           // will timeout after 5 missed packets -- at this point we should just disable driving completely
                                           1);
 
   apps = CAN_create_receive_packet(APPS_VOLTAGES_ID, 100, APPS_VOLTAGES_DLC);
+  bse = CAN_create_receive_packet(BSE_VOLTAGES_ID, 100, BSE_VOLTAGES_DLC);
 
 
   // Actually start tracking these newly set up packets.
@@ -90,6 +91,7 @@ void sensors_init(FDCAN_HandleTypeDef* hcan, NightCANInstance* canInstance)
 
   CAN_addReceivePacket(canInstance, &driveSwitch);
   CAN_addReceivePacket(canInstance, &apps);
+  CAN_addReceivePacket(canInstance, &bse);
   CAN_addReceivePacket(canInstance, &steeringAngle);
 };
 
@@ -104,7 +106,7 @@ void sensors_periodic(SensorData* sensorData, VcuModelInputs *vcuModelInputs)
 /** Read the correct packet from CAN and update the drive switch setting */
 static void sensors_updateDriveSwitch(SensorData* sensorData, VcuModelInputs *vcuModelInputs)
 {
-    vcuModelInputs->driveSwitchEnabled = driveSwitch.data[0];
+    vcuModelInputs->driveSwitchEnabled = !driveSwitch.data[0];
 }
 
 static void sensors_updateWheelSpeeds(SensorData* sensorData, VcuModelInputs *vcuModelInputs)
@@ -165,4 +167,6 @@ static void sensors_updatePedalBox(SensorData* sensorData, VcuModelInputs *vcuMo
                                                        BSE_VOLTAGES_BSE_REAR_VOLTAGE_BYTE,
                                                        BSE_VOLTAGES_BSE_REAR_VOLTAGE_PREC);
   }
+  sensorData->pedalBox.bseFVoltage = vcuModelInputs->bseFVoltage;
+  sensorData->pedalBox.bseRVoltage = vcuModelInputs->bseRVoltage;
 };

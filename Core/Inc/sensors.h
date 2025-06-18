@@ -31,8 +31,8 @@ typedef struct PedalBox
   float columnAngle;
   float appsVoltage1;
   float appsVoltage2;
-  float bseVoltage1;
-  float bseVoltage2;
+  float bseFVoltage;
+  float bseRVoltage;
   float bseVoltageMixed;
   float bppsVoltage1;
   float bppsVoltage2;

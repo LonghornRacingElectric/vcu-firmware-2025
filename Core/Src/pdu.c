@@ -154,10 +154,10 @@ void pdu_init(PDUData *pduData, NightCANInstance *hcan) {
     pduData->switches.rad_fans = 0.0f;
     pduData->switches.board_power = 1.0f; // turn on all boards
     pduData->switches.brake_light = 1.0f; // flash brake light on startup
-    pduData->switches.cooling_pump_1 = 0.0f;
-    pduData->switches.cooling_pump_2 = 0.0f;
-    pduData->switches.green_status_light = 1.0f; // flash
-    pduData->switches.red_status_light = 1.0f; // flash
+    pduData->switches.cooling_pump_1 = 1.0f;
+    pduData->switches.cooling_pump_2 = 1.0f;
+    pduData->switches.green_status_light = 0.0f;
+    pduData->switches.red_status_light = 0.0f;
 
     /* Cooling */
     HAL_TIM_PWM_Start(&PWM_COOLING_PUMP_1, TIM_COOLING_PUMP_1_INIT_CH);
@@ -273,7 +273,7 @@ void pdu_periodic(PDUData *pduData) {
     /* Update PWM on all signals */
     /* Cooling */
     PWM_COOLING_PUMP_1.Instance->PWM_COOLING_PUMP_CH =  pduData->switches.cooling_pump_1 * PWM_COOLING_PUMP_1.Instance->ARR; // testing with percentages
-//    PWM_COOLING_PUMP_2.Instance->PWM_COOLING_PUMP_2_CH =  pduData->switches.cooling_pump_2 * PWM_COOLING_PUMP_1.Instance->ARR; // testing with percentages
+    PWM_COOLING_PUMP_2.Instance->PWM_COOLING_PUMP_2_CH =  pduData->switches.cooling_pump_2 * PWM_COOLING_PUMP_2.Instance->ARR; // testing with percentages
     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
     PWM_BATTERY_FANS_TIM.Instance->PWM_BATTERY_FANS = pduData->switches.battery_fans * PWM_BATTERY_FANS_TIM.Instance->ARR;
 
@@ -281,9 +281,9 @@ void pdu_periodic(PDUData *pduData) {
     PWM_RADIATOR_FANS_TIM.Instance->PWM_RADIATOR_FANS = pduData->switches.rad_fans * PWM_RADIATOR_FANS_TIM.Instance->ARR;
 
     /* Lights */
-    pduData->switches.brake_light = ((lib_timer_elapsed_ms() / 200) % 2) * 0.002f;
-    pduData->switches.red_status_light = ((lib_timer_elapsed_ms() / 200) % 2) * 0.0005f;
-    pduData->switches.green_status_light = (1-((lib_timer_elapsed_ms() / 200) % 2)) * 0.005f;
+    // pduData->switches.brake_light = ((lib_timer_elapsed_ms() / 200) % 2) * 0.002f;
+    // pduData->switches.red_status_light = ((lib_timer_elapsed_ms() / 200) % 2) * 0.0005f;
+    // pduData->switches.green_status_light = (1-((lib_timer_elapsed_ms() / 200) % 2)) * 0.005f;
     setPWMLights(pduData->switches.brake_light, pduData->switches.green_status_light,
                  pduData->switches.red_status_light, pduData->voltages.v_sense);
 
