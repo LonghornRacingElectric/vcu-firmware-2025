@@ -77,8 +77,10 @@ static void MPU_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 bool isFinished;
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
-    isFinished = 1;
+
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
+{
+  isFinished = 1;
 }
 
 #define GPS_BUFFER_SIZE 256       // Size of the circular DMA buffer (power of 2 often good, but not required)
@@ -108,63 +110,71 @@ extern DMA_HandleTypeDef hdma_uart4_rx;
   * and the current DMA write pointer.
   * @retval None
   */
-void process_gps_dma_buffer(void) {
-    // Get the current position of the DMA write pointer.
-    // CNDTR counts *down* from the buffer size. The number of bytes written
-    // since the last wrap-around = buffer_size - CNDTR.
-    // The write pointer index is this value modulo buffer_size.
-    uint16_t dma_write_ptr = (GPS_BUFFER_SIZE - __HAL_DMA_GET_COUNTER(&hdma_uart4_rx)) % GPS_BUFFER_SIZE;
+void process_gps_dma_buffer(void)
+{
+  // Get the current position of the DMA write pointer.
+  // CNDTR counts *down* from the buffer size. The number of bytes written
+  // since the last wrap-around = buffer_size - CNDTR.
+  // The write pointer index is this value modulo buffer_size.
+  uint16_t dma_write_ptr = (GPS_BUFFER_SIZE - __HAL_DMA_GET_COUNTER(&hdma_uart4_rx)) % GPS_BUFFER_SIZE;
 
-    // Process data byte by byte from the app's read pointer up to the DMA's write pointer
-    while (app_read_ptr != dma_write_ptr) {
-        // Get the byte pointed to by the application read pointer
-        uint8_t current_byte = GPS_BUFFER[app_read_ptr];
+  // Process data byte by byte from the app's read pointer up to the DMA's write pointer
+  while (app_read_ptr != dma_write_ptr)
+  {
+    // Get the byte pointed to by the application read pointer
+    uint8_t current_byte = GPS_BUFFER[app_read_ptr];
 
-        // --- NMEA Sentence Detection Logic ---
-        if (current_byte == '$') {
-            // Start of a new NMEA sentence
-            memset(current_nmea_message, 0, NMEA_MESSAGE_MAX_LEN); // Clear previous buffer contents
-            current_nmea_message[0] = '$';
-            current_nmea_idx = 1;
-            accumulating_nmea = true;
-        }
-        else if (accumulating_nmea) {
-            // If we have already found '$', keep accumulating characters
-            if (current_nmea_idx < (NMEA_MESSAGE_MAX_LEN - 1)) {
-                // Add character to our message buffer
-                current_nmea_message[current_nmea_idx++] = current_byte;
-            } else {
-                // Error: NMEA message too long for our buffer. Discard and reset.
-                accumulating_nmea = false;
-                current_nmea_idx = 0;
-                // Optional: Log this overflow error
-                usb_printf("ERROR: NMEA sentence overflow!\r\n");
-            }
-
-            // Check if this character terminates the message ('\n')
-            // NMEA sentences typically end with \r\n, but checking for \n is usually sufficient.
-            if (current_byte == '\n') {
-                // End of sentence found
-                current_nmea_message[current_nmea_idx] = '\0'; // Null-terminate the string
-
-                // --- Message Complete ---
-                // You now have a complete NMEA sentence in current_nmea_message
-                // TODO: Process the complete NMEA sentence here!
-                // Examples:
-//                usb_printf("GPS: %s", current_nmea_message); // Print the raw message (includes \r\n)
-                // parse_nmea_sentence(current_nmea_message); // Call your parsing function
-                // set_gps_data_ready_flag(); // Set a flag for another task
-
-                // Reset state for the next message
-                accumulating_nmea = false;
-                current_nmea_idx = 0;
-            }
-        }
-        // --- End NMEA Logic ---
-
-        // Increment the application read pointer, wrapping around the buffer
-        app_read_ptr = (app_read_ptr + 1) % GPS_BUFFER_SIZE;
+    // --- NMEA Sentence Detection Logic ---
+    if (current_byte == '$')
+    {
+      // Start of a new NMEA sentence
+      memset(current_nmea_message, 0, NMEA_MESSAGE_MAX_LEN); // Clear previous buffer contents
+      current_nmea_message[0] = '$';
+      current_nmea_idx = 1;
+      accumulating_nmea = true;
     }
+    else if (accumulating_nmea)
+    {
+      // If we have already found '$', keep accumulating characters
+      if (current_nmea_idx < (NMEA_MESSAGE_MAX_LEN - 1))
+      {
+        // Add character to our message buffer
+        current_nmea_message[current_nmea_idx++] = current_byte;
+      }
+      else
+      {
+        // Error: NMEA message too long for our buffer. Discard and reset.
+        accumulating_nmea = false;
+        current_nmea_idx = 0;
+        // Optional: Log this overflow error
+        usb_printf("ERROR: NMEA sentence overflow!\r\n");
+      }
+
+      // Check if this character terminates the message ('\n')
+      // NMEA sentences typically end with \r\n, but checking for \n is usually sufficient.
+      if (current_byte == '\n')
+      {
+        // End of sentence found
+        current_nmea_message[current_nmea_idx] = '\0'; // Null-terminate the string
+
+        // --- Message Complete ---
+        // You now have a complete NMEA sentence in current_nmea_message
+        // TODO: Process the complete NMEA sentence here!
+        // Examples:
+        //                usb_printf("GPS: %s", current_nmea_message); // Print the raw message (includes \r\n)
+        // parse_nmea_sentence(current_nmea_message); // Call your parsing function
+        // set_gps_data_ready_flag(); // Set a flag for another task
+
+        // Reset state for the next message
+        accumulating_nmea = false;
+        current_nmea_idx = 0;
+      }
+    }
+    // --- End NMEA Logic ---
+
+    // Increment the application read pointer, wrapping around the buffer
+    app_read_ptr = (app_read_ptr + 1) % GPS_BUFFER_SIZE;
+  }
 }
 
 #define GPS_BUFFER_SIZE 256       // Size of the circular DMA buffer (power of 2 often good, but not required)
@@ -188,7 +198,6 @@ extern DMA_HandleTypeDef hdma_uart4_rx;
   */
 int main(void)
 {
-
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -237,15 +246,15 @@ int main(void)
   /* USER CODE BEGIN 2 */
   PDUData pduData = {};
   BSPDOutputs bspd = {};
-  BSPDOutputs *bspdaddr = &bspd;
+  BSPDOutputs* bspdaddr = &bspd;
   SensorData sensors = {};
   InverterData inverterData = {};
 
   /* Initialize Structures/Subsystems */
   led_init(TIM15, &htim15, 2); // missing a channel on the vcu
   dfu_init(GPIOA, GPIO_PIN_15);
-  HAL_ADC_Start_DMA(&hadc1, (uint32_t *) ADC1_BUFFER, 14);
-  HAL_ADC_Start_DMA(&hadc3, (uint32_t *) ADC3_BUFFER, 2);
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)ADC1_BUFFER, 14);
+  HAL_ADC_Start_DMA(&hadc3, (uint32_t*)ADC3_BUFFER, 2);
   lib_timer_init();
 
 
@@ -256,115 +265,130 @@ int main(void)
   inverter_init(&carCAN);
 
   NightCANReceivePacket hvcPacket = CAN_create_receive_packet(INDICATORS_SHUTDOWN_STATUS_ID,
-  INDICATORS_SHUTDOWN_STATUS_FREQ*5, INDICATORS_SHUTDOWN_STATUS_DLC);
+                                                              INDICATORS_SHUTDOWN_STATUS_FREQ * 5,
+                                                              INDICATORS_SHUTDOWN_STATUS_DLC);
+  // TODO contactor state packet in hvc file
   // NightCANReceivePacket hvcPacket = CAN_create_receive_packet(BATTERY_PACK_STATUS_ID,
   //   BATTERY_PACK_STATUS_FREQ*5, BATTERY_PACK_STATUS_DLC);
   CAN_addReceivePacket(&carCAN, &hvcPacket);
 
-    VCUModelParameters params = {
-            .torque = {
-                    .mapPedalToTorqueRequest = {
-                            .x0 = 0.0f,
-                            .x1 = 1.0f,
-                            .y = {},
-                            .xP = 1.0f,
-                            .yP = 230.0f
-                    }
-            },
-            .stompp = {
-                    .stomppAppsRecoveryThreshold = 0.05f,
-                    .mechanicalBrakeThreshold = 0.08f,
-                    .stomppAppsCutoffThreshold = 0.25f
-            },
-            .apps = {
-                    .sensorInRangeUpperBound = 1.0f,
-                    .sensorInRangeLowerBound = 0.0f,
-                    .allowedPlausibilityRange = 0.1f,
-                    .appsDeadzoneTopPercent = 0.1f,
-                    .appsDeadzoneBottomPercent = 0.1f,
-                    .appsMaxImplausibilityTime = 100.0f,
-                    .pedal1Bias = 0.5f,
-            },
-            .brake_light = {
-                    .bseLightOnPercent = 0.5f,
-                    .bseTimeConstant = 0.8f
-            }
-    };
+  VcuModelParameters params = {
+    .apps = {
+      .apps1VoltageMin = 2.5f, // TODO tune pedals
+      .apps1VoltageMax = 2.5f,
+      .apps2VoltageMin = 2.5f,
+      .apps2VoltageMax = 2.5f,
 
-    VCUModelInputs inputs = {};
-    VCUModelOutputs outputs = {};
+      .appsMaxImplausibilityTime = 0.100f,
+      .allowedPlausibilityRange = 0.10f,
+      .appsDeadzoneBottomPercent = 0.0f,
+      .appsDeadzoneTopPercent = 0.0f,
+      .appsLowPassFilterTimeConstant = 0.0f,
+    },
+    .bse = {
+      .bseMinAllowableVoltage = 0.35f,
+      .bseMaxAllowableVoltage = 4.5f,
+      .bseZeroPressureVoltage = 0.5f,
+      .bseMaxPressureVoltage = 4.5f,
+      .bseMaxPressure = 3000.0f,
+      .bseBrakingPressure = 100.0f,
+      .bseMaxImplausibilityTime = 0.100f,
+      .bseLowPassFilterTimeConstant = 0.0f,
+    },
+    .stompp = {
+      .stomppAppsRecoveryThreshold = 0.05f,
+      .stomppAppsCutoffThreshold = 0.25f
+    },
 
-    // set up the vcu model with the parameters
-    VCUModel_set_parameters(&params);
+    .torque = {
+      .mapPedalToTorqueRequest = {
+        .x0 = 0.0f,
+        .x1 = 1.0f,
+        .y = {},
+        .xP = 1.0f,
+        .yP = 220.0f
+      }
+    },
+    .brake_light = {
+      .bseLightOnPercent = 0.5f,
+      .bseTimeConstant = 0.8f
+    }
+  };
+
+  VcuModelInputs vcuModelInputs = {};
+  VcuModelOutputs vcuModelOutputs = {};
+
+  VcuModel_setParams(&params);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-    led_rainbow(10 / 1000.0f);
+  led_rainbow(10 / 1000.0f);
 
-    HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, GPIO_PIN_SET);
-    HAL_LPTIM_Init(&hlptim2);
+  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, GPIO_PIN_SET);
+  HAL_LPTIM_Init(&hlptim2);
 
-    // HAL_UART_Receive_DMA(&huart4, GPS_BUFFER, GPS_BUFFER_SIZE);
+  // HAL_UART_Receive_DMA(&huart4, GPS_BUFFER, GPS_BUFFER_SIZE);
 
-    // HAL_LPTIM_Counter_Start(&hlptim2, hlptim2.Instance->ARR);
+  // HAL_LPTIM_Counter_Start(&hlptim2, hlptim2.Instance->ARR);
 
-    // __HAL_UART_CLEAR_FLAG(&huart4, UART_FLAG_ORE);
-    // GPSData gpsData = {};
+  // __HAL_UART_CLEAR_FLAG(&huart4, UART_FLAG_ORE);
+  // GPSData gpsData = {};
 
-    // setup_gps(&gpsData, &carCAN);
+  // setup_gps(&gpsData, &carCAN);
 
-    while (1)
+  while (1)
+  {
+    float deltaTime = lib_timer_deltaTime();
+    led_rainbow(deltaTime);
+
+    // TODO integrate ADC measurements, ex:
+    // uint16_t bse3 = ADC1_BUFFER[BSE3_IDX];
+    // float float_bse3 = ((float)bse3) * 15.1f / 10.0f * 3.3f / 65535.0f; // voltage at i/o (5v scale)
+
+    VcuModel_evaluate(&vcuModelInputs, &vcuModelOutputs, deltaTime);
+    receive_periodic();
+    bspd_periodic(bspdaddr);
+    pdu_periodic(&pduData);
+    sensors_periodic(&sensors, &vcuModelInputs);
+    inverter_periodic(&inverterData);
+
+    /** ---- Inverter ---- */
+    inverter_update_torque_request(vcuModelOutputs.torqueCommand);
+
+    /** ---- COOLING TACHOMETERS ---- */
+    // Never validated.
+    // uint32_t tach = HAL_LPTIM_ReadCounter(&hlptim2);
+
+    /** ---- GPS ---- */
+    // process_gps_dma_buffer();
+    // send_GPS_CAN();
+    // process_nmea(current_nmea_message);
+
+    /** ---- CAN SUBSYSTEM PERIODIC ---- */
+    // Unconditionally sends ALL CAN Packets that have been marked for sending
+    // IFF the time quanta reached
+    // ALSO READS ALL CAN packets -- these are made available in the next main loop within the structs
+    CAN_periodic(&carCAN);
+
+    static int x = 0;
+    if ((x++) % 2000 == 0)
     {
-        uint32_t curtime = lib_timer_delta_ms();
-        led_rainbow(curtime / 1000.0f);
-
-        uint16_t bse3 = ADC1_BUFFER[BSE3_IDX];
-        float float_bse3 = ((float) bse3) * 15.1f / 10.0f * 3.3f / 65535.0f; // voltage at i/o (5v scale)
-
-        VCUModel_evaluate(&inputs, &outputs, curtime/1000.0f);
-        receive_periodic();
-        bspd_periodic(bspdaddr);
-        pdu_periodic(&pduData);
-        sensors_periodic(&sensors, &inputs);
-        inverter_periodic(&inverterData);
-
-        /** ---- Inverter ---- */
-        // Also updates the direction of the inverter's output
-        inverter_update_torque_request(outputs.torque.torqueRequest);
-
-        /** ---- COOLING TACHOMETERS ---- */
-        // Never validated.
-        // uint32_t tach = HAL_LPTIM_ReadCounter(&hlptim2);
-
-        /** ---- GPS ---- */
-        // process_gps_dma_buffer();
-        // send_GPS_CAN();
-        // process_nmea(current_nmea_message);
-
-        /** ---- CAN SUBSYSTEM PERIODIC ---- */
-        // Unconditionally sends ALL CAN Packets that have been marked for sending
-        // IFF the time quanta reached
-        // ALSO READS ALL CAN packets -- these are made available in the next main loop within the structs
-        CAN_periodic(&carCAN);
-
-        static int x = 0;
-        if((x++) % 2000 == 0)
-        {
-
-          int bmsError = hvcPacket.data[0];
-          int imdError = hvcPacket.data[1];
-          usb_printf("bms=%d, imd=%d", bmsError, imdError);
-          // usb_printf("steering angle: %f", sensors.pedalBox.columnAngle);
-          // usb_printf("apps1: %fV\t apps2: %fV", sensors.pedalBox.appsVoltage1, sensors.pedalBox.appsVoltage2);
-          // usb_printf("angle: %fdeg\t rpm: %frpm", inverterData.electricalAngle, inverterData.motorRpm);
-          // HAL_Delay(1);
-        }
+      // int bmsError = hvcPacket.data[0];
+      // int imdError = hvcPacket.data[1];
+      // usb_printf("bms=%d, imd=%d", bmsError, imdError);
+      // usb_printf("steering angle: %f", sensors.pedalBox.columnAngle);
+      // usb_printf("apps1: %fV\t apps2: %fV", sensors.pedalBox.appsVoltage1, sensors.pedalBox.appsVoltage2);
+      // usb_printf("angle: %fdeg\t rpm: %frpm", inverterData.electricalAngle, inverterData.motorRpm);
+      usb_printf("status: %d, apps1: %.2f%%, apps2: %.2f%%, apps: %.2f%%",
+        vcuModelOutputs.appsStatus, vcuModelOutputs.apps1Percent, vcuModelOutputs.apps2Percent, vcuModelOutputs.appsPercent);
+      // HAL_Delay(1);
+    }
 
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    }
+  }
   /* USER CODE END 3 */
 }
 
@@ -385,7 +409,9 @@ void SystemClock_Config(void)
   */
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE0);
 
-  while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
+  while (!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY))
+  {
+  }
 
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
@@ -409,9 +435,9 @@ void SystemClock_Config(void)
 
   /** Initializes the CPU, AHB and APB buses clocks
   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2
-                              |RCC_CLOCKTYPE_D3PCLK1|RCC_CLOCKTYPE_D1PCLK1;
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
+    | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2
+    | RCC_CLOCKTYPE_D3PCLK1 | RCC_CLOCKTYPE_D1PCLK1;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV2;
@@ -456,7 +482,7 @@ void PeriphCommonClock_Config(void)
 
 /* USER CODE END 4 */
 
- /* MPU Configuration */
+/* MPU Configuration */
 
 void MPU_Config(void)
 {
@@ -482,7 +508,6 @@ void MPU_Config(void)
   HAL_MPU_ConfigRegion(&MPU_InitStruct);
   /* Enables the MPU */
   HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
-
 }
 
 /**
@@ -492,14 +517,14 @@ void MPU_Config(void)
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
-    /* User can add his own implementation to report the HAL error return state */
-//    __disable_irq();
-    while (1)
-    {
-        led_set(255, 0, 0 );
+  /* User can add his own implementation to report the HAL error return state */
+  //    __disable_irq();
+  while (1)
+  {
+    led_set(255, 0, 0);
 
-        receive_periodic();
-    }
+    receive_periodic();
+  }
   /* USER CODE END Error_Handler_Debug */
 }
 

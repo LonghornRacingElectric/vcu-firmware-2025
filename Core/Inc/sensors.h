@@ -51,14 +51,14 @@ typedef struct SensorData {
 void sensors_init(FDCAN_HandleTypeDef *hcan, NightCANInstance *canInstance);
 
 /** Will call the other methods to update all inputs to the model */
-void sensors_periodic(SensorData* sensorData, VCUModelInputs *vcuModelInputs);
+void sensors_periodic(SensorData* sensorData, VcuModelInputs *vcuModelInputs);
 
 /** Read the correct packet from CAN and update the drive switch setting */
-static void sensors_updateDriveSwitch(SensorData* sensorData, VCUModelInputs *vcuModelInputs);
+static void sensors_updateDriveSwitch(SensorData* sensorData, VcuModelInputs *vcuModelInputs);
 static void sensors_updateCorner(Corner* corner, NightCANReceivePacket* uprightPacket,
   NightCANReceivePacket* uprightAccelPacket, NightCANReceivePacket* undertrayPacket, NightCANReceivePacket* undertrayAngularRatePacket);
-static void sensors_updateWheelSpeeds(SensorData* sensorData, VCUModelInputs *vcuModelInputs);
-static void sensors_updatePedalBox(SensorData* sensorData, VCUModelInputs *vcuModelInputs);
+static void sensors_updateWheelSpeeds(SensorData* sensorData, VcuModelInputs *vcuModelInputs);
+static void sensors_updatePedalBox(SensorData* sensorData, VcuModelInputs *vcuModelInputs);
 
 
 #endif //VCU_FIRMWARE_2025_DRIVE_H
