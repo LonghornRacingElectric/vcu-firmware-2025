@@ -42,6 +42,7 @@
 #include "night_can.h"
 #include "inverter.h"
 #include "gps.h"
+#include "hvc.h"
 #include "sensors.h"
 /* USER CODE END Includes */
 
@@ -245,6 +246,7 @@ int main(void)
   MX_UART7_Init();
   /* USER CODE BEGIN 2 */
   PDUData pduData = {};
+  HvcStatus hvcStatus = {};
   BSPDOutputs bspd = {};
   BSPDOutputs* bspdaddr = &bspd;
   SensorData sensors = {};
@@ -263,16 +265,10 @@ int main(void)
   pdu_init(&pduData, &carCAN);
   sensors_init(&hfdcan1, &carCAN);
   inverter_init(&carCAN);
+  hvc_init(&carCAN);
 
-  NightCANReceivePacket hvcPacket = CAN_create_receive_packet(INDICATORS_SHUTDOWN_STATUS_ID,
-                                                              INDICATORS_SHUTDOWN_STATUS_FREQ * 5,
-                                                              INDICATORS_SHUTDOWN_STATUS_DLC);
   NightCANPacket buzz_pkt = CAN_create_packet(0x1A0, 100, 1);
 
-  // TODO contactor state packet in hvc file
-  // NightCANReceivePacket hvcPacket = CAN_create_receive_packet(BATTERY_PACK_STATUS_ID,
-  //   BATTERY_PACK_STATUS_FREQ*5, BATTERY_PACK_STATUS_DLC);
-  CAN_addReceivePacket(&carCAN, &hvcPacket);
   CAN_AddTxPacket(&carCAN, &buzz_pkt);
 
   VcuModelParameters params = {
@@ -350,6 +346,7 @@ int main(void)
     receive_periodic();
     bspd_periodic(bspdaddr);
     pdu_periodic(&pduData);
+    hvc_periodic(&hvcStatus);
     sensors_periodic(&sensors, &vcuModelInputs);
     inverter_periodic(&inverterData);
 
@@ -357,7 +354,7 @@ int main(void)
     inverter_update_torque_request(vcuModelOutputs.torqueCommand);
 
     vcuModelInputs.bseFVoltage = vcuModelInputs.bseRVoltage; // TODO lmao
-    vcuModelInputs.tractiveSystemReady = true; // TODO lmao2
+    vcuModelInputs.tractiveSystemReady = (!hvcStatus.isTimedOut) && hvcStatus.energized;
 
     VcuModel_evaluate(&vcuModelInputs, &vcuModelOutputs, deltaTime);
 
@@ -378,19 +375,27 @@ int main(void)
     buzz_pkt.data[0] = vcuModelOutputs.buzzerEnabled;
     pduData.switches.brake_light = vcuModelOutputs.brakeLightPercent;
 
-    bool bmsError = hvcPacket.data[0];
-    bool imdError = hvcPacket.data[1];
-    if(hvcPacket.is_timed_out)
+    if(hvcStatus.isTimedOut)
     {
       pduData.switches.green_status_light = ((lib_timer_elapsed_ms() / 200) % 2) * 0.005f;
       pduData.switches.red_status_light = ((lib_timer_elapsed_ms() / 200) % 2) * 0.005f;
-    } else if (bmsError | imdError)
+    } else if (hvcStatus.bmsError || hvcStatus.imdError)
     {
       pduData.switches.green_status_light = 0.005f;
       pduData.switches.red_status_light = 0.0f;
     } else {
       pduData.switches.green_status_light = 0.0f;
       pduData.switches.red_status_light = ((lib_timer_elapsed_ms() / 200) % 2) * 0.005f;
+    }
+
+    if(vcuModelOutputs.driveStateEnabled)
+    {
+      pduData.switches.rad_fans = 1.0f;
+      pduData.switches.cooling_pump_1 = 1.0f;
+    } else
+    {
+      pduData.switches.rad_fans = 0.0f;
+      pduData.switches.cooling_pump_1 = 0.0f;
     }
 
     static int x = 0;
@@ -410,6 +415,7 @@ int main(void)
       // usb_printf("time: %.6fs", deltaTime);
       // usb_printf("apps: %.2f, appsStompp : %.2f, braking: %d, switch: %d, drive: %d, buzz: %d", vcuModelOutputs.appsPercent, vcuModelOutputs.appsPercentStompp, vcuModelOutputs.isDriverBraking, vcuModelInputs.driveSwitchEnabled, vcuModelOutputs.driveStateEnabled, vcuModelOutputs.buzzerEnabled);
       // usb_printf("state: %d, torque: %.2f, enable: %d", vcuModelOutputs.driveStateEnabled, vcuModelOutputs.torqueCommand, vcuModelOutputs.enableInverter);
+      usb_printf("ride heights FL=%.1fmm, FR=%.1fmm, RL=%.1fmm, RR=%.1fmm", sensors.fl.rideHeight, sensors.fr.rideHeight, sensors.rl.rideHeight, sensors.rr.rideHeight);
     }
 
     /* USER CODE END WHILE */

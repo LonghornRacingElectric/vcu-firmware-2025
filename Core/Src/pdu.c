@@ -154,8 +154,8 @@ void pdu_init(PDUData *pduData, NightCANInstance *hcan) {
     pduData->switches.rad_fans = 0.0f;
     pduData->switches.board_power = 1.0f; // turn on all boards
     pduData->switches.brake_light = 1.0f; // flash brake light on startup
-    pduData->switches.cooling_pump_1 = 1.0f;
-    pduData->switches.cooling_pump_2 = 1.0f;
+    pduData->switches.cooling_pump_1 = 0.0f;
+    pduData->switches.cooling_pump_2 = 0.0f;
     pduData->switches.green_status_light = 0.0f;
     pduData->switches.red_status_light = 0.0f;
 

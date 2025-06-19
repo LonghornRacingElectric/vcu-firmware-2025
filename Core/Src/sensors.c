@@ -60,7 +60,13 @@ void sensors_init(FDCAN_HandleTypeDef* hcan, NightCANInstance* canInstance)
 
 
   flUndertray = CAN_create_receive_packet(ACCELERATION_VECTOR_SPRUNG_RIDE_HEIGHT_FL_ID,
-    ACCELERATION_VECTOR_SPRUNG_RIDE_HEIGHT_FL_FREQ * 5, ACCELERATION_VECTOR_SPRUNG_RIDE_HEIGHT_FL_DLC);
+  ACCELERATION_VECTOR_SPRUNG_RIDE_HEIGHT_FL_FREQ * 5, ACCELERATION_VECTOR_SPRUNG_RIDE_HEIGHT_FL_DLC);
+  frUndertray = CAN_create_receive_packet(ACCELERATION_VECTOR_SPRUNG_RIDE_HEIGHT_FR_ID,
+  ACCELERATION_VECTOR_SPRUNG_RIDE_HEIGHT_FR_FREQ * 5, ACCELERATION_VECTOR_SPRUNG_RIDE_HEIGHT_FR_DLC);
+  rlUndertray = CAN_create_receive_packet(ACCELERATION_VECTOR_SPRUNG_RIDE_HEIGHT_RL_ID,
+  ACCELERATION_VECTOR_SPRUNG_RIDE_HEIGHT_RL_FREQ * 5, ACCELERATION_VECTOR_SPRUNG_RIDE_HEIGHT_RL_DLC);
+  rrUndertray = CAN_create_receive_packet(ACCELERATION_VECTOR_SPRUNG_RIDE_HEIGHT_RR_ID,
+    ACCELERATION_VECTOR_SPRUNG_RIDE_HEIGHT_RR_FREQ * 5, ACCELERATION_VECTOR_SPRUNG_RIDE_HEIGHT_RR_DLC);
 
   // ACCELERATION_VECTOR_UNSPRUNG_FL_ID
 
@@ -88,6 +94,9 @@ void sensors_init(FDCAN_HandleTypeDef* hcan, NightCANInstance* canInstance)
   // TODO other corner stuff
 
   CAN_addReceivePacket(canInstance, &flUndertray);
+  CAN_addReceivePacket(canInstance, &frUndertray);
+  CAN_addReceivePacket(canInstance, &rlUndertray);
+  CAN_addReceivePacket(canInstance, &rrUndertray);
 
   CAN_addReceivePacket(canInstance, &driveSwitch);
   CAN_addReceivePacket(canInstance, &apps);
