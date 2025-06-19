@@ -254,8 +254,8 @@ float normalizeLightWithVoltage(float nominalPctAt24V, float curVoltage) {
 
 void setPWMLights(float brake_light, float green_status, float red_status, float curVoltage) {
     PWM_BRAKE_LIGHT_TIM.Instance->PWM_BRAKE_LIGHT = normalizeLightWithVoltage(brake_light, curVoltage) * PWM_BRAKE_LIGHT_TIM.Instance->ARR;
-    PWM_GREEN_STATUS_TIM.Instance->PWM_GREEN_STATUS = normalizeLightWithVoltage(green_status, curVoltage) * PWM_GREEN_STATUS_TIM.Instance->ARR;
-    PWM_RED_STATUS_TIM.Instance->PWM_RED_STATUS = normalizeLightWithVoltage(red_status, curVoltage) * PWM_RED_STATUS_TIM.Instance->ARR;
+    PWM_GREEN_STATUS_TIM.Instance->PWM_GREEN_STATUS = normalizeLightWithVoltage(red_status, curVoltage) * PWM_GREEN_STATUS_TIM.Instance->ARR;
+    PWM_RED_STATUS_TIM.Instance->PWM_RED_STATUS = normalizeLightWithVoltage(green_status, curVoltage) * PWM_RED_STATUS_TIM.Instance->ARR;
 
 //    usb_printf("The output of the normalized voltage was %f compared to 0.34f: %f", normalizeLightWithVoltage(green_status, curVoltage), normalizeLightWithVoltage(0.34f, curVoltage));
 }

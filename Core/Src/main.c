@@ -374,18 +374,21 @@ int main(void)
     CAN_periodic(&carCAN);
     buzz_pkt.data[0] = vcuModelOutputs.buzzerEnabled;
     pduData.switches.brake_light = vcuModelOutputs.brakeLightPercent;
+   // pduData.switches.brake_light = ((lib_timer_elapsed_ms() / 200) % 2) * 0.5f;;
 
     if(hvcStatus.isTimedOut)
     {
-      pduData.switches.green_status_light = ((lib_timer_elapsed_ms() / 200) % 2) * 0.005f;
-      pduData.switches.red_status_light = ((lib_timer_elapsed_ms() / 200) % 2) * 0.005f;
-    } else if (hvcStatus.bmsError || hvcStatus.imdError)
-    {
       pduData.switches.green_status_light = 0.005f;
       pduData.switches.red_status_light = 0.0f;
-    } else {
+      // pduData.switches.green_status_light = ((lib_timer_elapsed_ms() / 200) % 2) * 0.005f;
+      // pduData.switches.red_status_light = ((lib_timer_elapsed_ms() / 200) % 2) * 0.005f;
+    } else if (hvcStatus.bmsError || hvcStatus.imdError)
+    {
       pduData.switches.green_status_light = 0.0f;
       pduData.switches.red_status_light = ((lib_timer_elapsed_ms() / 200) % 2) * 0.005f;
+    } else {
+      pduData.switches.green_status_light = 0.005f;
+      pduData.switches.red_status_light = 0.0f;
     }
 
     if(vcuModelOutputs.driveStateEnabled)
@@ -405,7 +408,7 @@ int main(void)
       // int imdError = hvcPacket.data[1];
       // usb_printf("bms=%d, imd=%d", bmsError, imdError);
       // usb_printf("steering angle: %f", sensors.pedalBox.columnAngle);
-      // usb_printf("apps1: %fV\t apps2: %fV", sensors.pedalBox.appsVoltage1, sensors.pedalBox.appsVoltage2);
+      usb_printf("apps1: %fV\t apps2: %fV", sensors.pedalBox.appsVoltage1, sensors.pedalBox.appsVoltage2);
       // usb_printf("angle: %fdeg\t rpm: %frpm", inverterData.electricalAngle, inverterData.motorRpm);
       // usb_printf("status: %d, bseF: %.2fV, bseR: %.2fV, bseF: %.2fpsi, bseR: %.2fpsi, bseAvg: %.2fpsi, pressed: %d",
       // vcuModelOutputs.bseStatus, vcuModelInputs.bseFVoltage, vcuModelInputs.bseRVoltage, vcuModelOutputs.bseFPressure, vcuModelOutputs.bseRPressure, vcuModelOutputs.bseAvgPressure, vcuModelOutputs.isDriverBraking);
@@ -415,7 +418,7 @@ int main(void)
       // usb_printf("time: %.6fs", deltaTime);
       // usb_printf("apps: %.2f, appsStompp : %.2f, braking: %d, switch: %d, drive: %d, buzz: %d", vcuModelOutputs.appsPercent, vcuModelOutputs.appsPercentStompp, vcuModelOutputs.isDriverBraking, vcuModelInputs.driveSwitchEnabled, vcuModelOutputs.driveStateEnabled, vcuModelOutputs.buzzerEnabled);
       // usb_printf("state: %d, torque: %.2f, enable: %d", vcuModelOutputs.driveStateEnabled, vcuModelOutputs.torqueCommand, vcuModelOutputs.enableInverter);
-      usb_printf("ride heights FL=%.1fmm, FR=%.1fmm, RL=%.1fmm, RR=%.1fmm", sensors.fl.rideHeight, sensors.fr.rideHeight, sensors.rl.rideHeight, sensors.rr.rideHeight);
+      // usb_printf("ride heights FL=%.1fmm, FR=%.1fmm, RL=%.1fmm, RR=%.1fmm", sensors.fl.rideHeight, sensors.fr.rideHeight, sensors.rl.rideHeight, sensors.rr.rideHeight);
     }
 
     /* USER CODE END WHILE */
