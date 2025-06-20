@@ -404,21 +404,33 @@ int main(void)
     static int x = 0;
     if ((x++) % 2000 == 0)
     {
-      // int bmsError = hvcPacket.data[0];
-      // int imdError = hvcPacket.data[1];
-      // usb_printf("bms=%d, imd=%d", bmsError, imdError);
+      // steering angle
       // usb_printf("steering angle: %f", sensors.pedalBox.columnAngle);
-      // usb_printf("apps1: %fV\t apps2: %fV", sensors.pedalBox.appsVoltage1, sensors.pedalBox.appsVoltage2);
+
+      // inverter and resolver
       // usb_printf("angle: %fdeg\t rpm: %frpm", inverterData.electricalAngle, inverterData.motorRpm);
+
+      // brake test
       // usb_printf("status: %d, bseF: %.2fV, bseR: %.2fV, bseF: %.2fpsi, bseR: %.2fpsi, bseAvg: %.2fpsi, pressed: %d",
       // vcuModelOutputs.bseStatus, vcuModelInputs.bseFVoltage, vcuModelInputs.bseRVoltage, vcuModelOutputs.bseFPressure, vcuModelOutputs.bseRPressure, vcuModelOutputs.bseAvgPressure, vcuModelOutputs.isDriverBraking);
-      usb_printf("status: %d, apps1: %.3fV, apps2: %.3fV, apps1: %.2f%%, apps2: %.2f%%, apps: %.2f%%",
-      vcuModelOutputs.appsStatus, sensors.pedalBox.appsVoltage1, sensors.pedalBox.appsVoltage2, vcuModelOutputs.apps1Percent*100, vcuModelOutputs.apps2Percent*100, vcuModelOutputs.appsPercent*100);
-      // HAL_Delay(1);
-      // usb_printf("time: %.6fs", deltaTime);
+
+      // apps
+      // usb_printf("status: %d, apps1: %.3fV, apps2: %.3fV, apps1: %.2f%%, apps2: %.2f%%, apps: %.2f%%",
+      //   vcuModelOutputs.appsStatus, sensors.pedalBox.appsVoltage1, sensors.pedalBox.appsVoltage2, vcuModelOutputs.apps1Percent*100, vcuModelOutputs.apps2Percent*100, vcuModelOutputs.appsPercent*100);
+
+      // park drive state machine
       // usb_printf("apps: %.2f, appsStompp : %.2f, braking: %d, switch: %d, drive: %d, buzz: %d", vcuModelOutputs.appsPercent, vcuModelOutputs.appsPercentStompp, vcuModelOutputs.isDriverBraking, vcuModelInputs.driveSwitchEnabled, vcuModelOutputs.driveStateEnabled, vcuModelOutputs.buzzerEnabled);
+
+      // torque command
       // usb_printf("state: %d, torque: %.2f, enable: %d", vcuModelOutputs.driveStateEnabled, vcuModelOutputs.torqueCommand, vcuModelOutputs.enableInverter);
+
+      // ride heights
       // usb_printf("ride heights FL=%.1fmm, FR=%.1fmm, RL=%.1fmm, RR=%.1fmm", sensors.fl.rideHeight, sensors.fr.rideHeight, sensors.rl.rideHeight, sensors.rr.rideHeight);
+
+      // BSPD
+      float hallEffectVoltage = ((float)ADC1_BUFFER[HALL_EFFECT_IDX]) * 15.1f / 10.0f * 3.3f / 65535.0f;
+      float bse3Voltage = ((float)ADC1_BUFFER[BSE3_IDX]) * 15.1f / 10.0f * 3.3f / 65535.0f;
+      usb_printf("hall effect: %.3fV, bse3: %.3fV", hallEffectVoltage, bse3Voltage);
     }
 
     /* USER CODE END WHILE */
