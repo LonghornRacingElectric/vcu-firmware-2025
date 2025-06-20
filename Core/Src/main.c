@@ -408,12 +408,12 @@ int main(void)
       // int imdError = hvcPacket.data[1];
       // usb_printf("bms=%d, imd=%d", bmsError, imdError);
       // usb_printf("steering angle: %f", sensors.pedalBox.columnAngle);
-      usb_printf("apps1: %fV\t apps2: %fV", sensors.pedalBox.appsVoltage1, sensors.pedalBox.appsVoltage2);
+      // usb_printf("apps1: %fV\t apps2: %fV", sensors.pedalBox.appsVoltage1, sensors.pedalBox.appsVoltage2);
       // usb_printf("angle: %fdeg\t rpm: %frpm", inverterData.electricalAngle, inverterData.motorRpm);
       // usb_printf("status: %d, bseF: %.2fV, bseR: %.2fV, bseF: %.2fpsi, bseR: %.2fpsi, bseAvg: %.2fpsi, pressed: %d",
       // vcuModelOutputs.bseStatus, vcuModelInputs.bseFVoltage, vcuModelInputs.bseRVoltage, vcuModelOutputs.bseFPressure, vcuModelOutputs.bseRPressure, vcuModelOutputs.bseAvgPressure, vcuModelOutputs.isDriverBraking);
-      // usb_printf("status: %d, apps1: %.3fV, apps2: %.3fV, apps1: %.2f%%, apps2: %.2f%%, apps: %.2f%%",
-      //   vcuModelOutputs.appsStatus, sensors.pedalBox.appsVoltage1, sensors.pedalBox.appsVoltage2, vcuModelOutputs.apps1Percent*100, vcuModelOutputs.apps2Percent*100, vcuModelOutputs.appsPercent*100);
+      usb_printf("status: %d, apps1: %.3fV, apps2: %.3fV, apps1: %.2f%%, apps2: %.2f%%, apps: %.2f%%",
+      vcuModelOutputs.appsStatus, sensors.pedalBox.appsVoltage1, sensors.pedalBox.appsVoltage2, vcuModelOutputs.apps1Percent*100, vcuModelOutputs.apps2Percent*100, vcuModelOutputs.appsPercent*100);
       // HAL_Delay(1);
       // usb_printf("time: %.6fs", deltaTime);
       // usb_printf("apps: %.2f, appsStompp : %.2f, braking: %d, switch: %d, drive: %d, buzz: %d", vcuModelOutputs.appsPercent, vcuModelOutputs.appsPercentStompp, vcuModelOutputs.isDriverBraking, vcuModelInputs.driveSwitchEnabled, vcuModelOutputs.driveStateEnabled, vcuModelOutputs.buzzerEnabled);
