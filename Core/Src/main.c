@@ -199,6 +199,7 @@ extern DMA_HandleTypeDef hdma_uart4_rx;
   */
 int main(void)
 {
+
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -273,24 +274,24 @@ int main(void)
 
   VcuModelParameters params = {
     .apps = {
-      .apps1VoltageMin = 1.320f, // TODO tune pedals
-      .apps1VoltageMax = 2.250f,
-      .apps2VoltageMin = 0.610f,
-      .apps2VoltageMax = 1.100f,
+      .apps1VoltageMin = 1.400f, // TODO tune pedals
+      .apps1VoltageMax = 2.350f,
+      .apps2VoltageMin = 0.730f,
+      .apps2VoltageMax = 1.160f,
 
       .appsMaxImplausibilityTime = 0.100f,
       .allowedPlausibilityRange = 0.10f,
-      .appsDeadzoneBottomPercent = 0.03f,
+      .appsDeadzoneBottomPercent = 0.05f,
       .appsDeadzoneTopPercent = 0.05f,
-      .appsLowPassFilterTimeConstant = 0.0f,
+      .appsLowPassFilterTimeConstant = 0.02f,
     },
     .bse = {
-      .bseMinAllowableVoltage = 0.3f,
+      .bseMinAllowableVoltage = 0.08f,
       .bseMaxAllowableVoltage = 4.5f,
-      .bseZeroPressureVoltage = 0.4f,
+      .bseZeroPressureVoltage = 0.09f,
       .bseMaxPressureVoltage = 4.5f,
       .bseMaxPressure = 3000.0f,
-      .bseBrakingPressure = 2.0f, // psi
+      .bseBrakingPressure = 1.0f, // psi
       .bseMaxImplausibilityTime = 0.100f,
       .bseLowPassFilterTimeConstant = 0.0f,
     },
@@ -307,7 +308,8 @@ int main(void)
         .x1 = 1.0f,
         .y = {},
         .xP = 1.0f,
-        .yP = 220.0f
+        // .yP = 220.0f
+        .yP = 15.0f // TODO for E-tech only
       }
     }
   };
@@ -339,9 +341,7 @@ int main(void)
     float deltaTime = lib_timer_deltaTime();
     led_rainbow(deltaTime);
 
-    // TODO integrate ADC measurements, ex:
-    // uint16_t bse3 = ADC1_BUFFER[BSE3_IDX];
-    // float float_bse3 = ((float)bse3) * 15.1f / 10.0f * 3.3f / 65535.0f; // voltage at i/o (5v scale)
+    float bse3 = ADC1_BUFFER[BSE3_IDX] * 15.1f / 10.0f * 3.3f / 65535.0f; // voltage at i/o (5v scale)
 
     receive_periodic();
     bspd_periodic(bspdaddr);
@@ -353,8 +353,13 @@ int main(void)
     /** ---- Inverter ---- */
     inverter_update_torque_request(vcuModelOutputs.torqueCommand);
 
-    vcuModelInputs.bseFVoltage = vcuModelInputs.bseRVoltage; // TODO lmao
+    // vcuModelInputs.bseFVoltage = vcuModelInputs.bseRVoltage; // TODO lmao
+    vcuModelInputs.bseFVoltage = bse3;
+    vcuModelInputs.bseRVoltage = bse3;
+    vcuModelInputs.apps1Voltage = ADC1_BUFFER[THERM_MOTOR_1_IDX] * 3.3f / 65535.0f;
+    vcuModelInputs.apps2Voltage = ADC1_BUFFER[THERM_MOTOR_2_IDX] * 3.3f / 65535.0f;
     vcuModelInputs.tractiveSystemReady = (!hvcStatus.isTimedOut) && hvcStatus.energized;
+    // vcuModelInputs.tractiveSystemReady = true;
 
     VcuModel_evaluate(&vcuModelInputs, &vcuModelOutputs, deltaTime);
 
@@ -374,6 +379,7 @@ int main(void)
     CAN_periodic(&carCAN);
     buzz_pkt.data[0] = vcuModelOutputs.buzzerEnabled;
     pduData.switches.brake_light = vcuModelOutputs.brakeLightPercent;
+    // pduData.switches.brake_light = 0.5f;
    // pduData.switches.brake_light = ((lib_timer_elapsed_ms() / 200) % 2) * 0.5f;;
 
     if(hvcStatus.isTimedOut)
@@ -416,7 +422,7 @@ int main(void)
 
       // apps
       // usb_printf("status: %d, apps1: %.3fV, apps2: %.3fV, apps1: %.2f%%, apps2: %.2f%%, apps: %.2f%%",
-      //   vcuModelOutputs.appsStatus, sensors.pedalBox.appsVoltage1, sensors.pedalBox.appsVoltage2, vcuModelOutputs.apps1Percent*100, vcuModelOutputs.apps2Percent*100, vcuModelOutputs.appsPercent*100);
+      // vcuModelOutputs.appsStatus, vcuModelInputs.apps1Voltage, vcuModelInputs.apps2Voltage, vcuModelOutputs.apps1Percent*100, vcuModelOutputs.apps2Percent*100, vcuModelOutputs.appsPercent*100);
 
       // park drive state machine
       // usb_printf("apps: %.2f, appsStompp : %.2f, braking: %d, switch: %d, drive: %d, buzz: %d", vcuModelOutputs.appsPercent, vcuModelOutputs.appsPercentStompp, vcuModelOutputs.isDriverBraking, vcuModelInputs.driveSwitchEnabled, vcuModelOutputs.driveStateEnabled, vcuModelOutputs.buzzerEnabled);
@@ -431,6 +437,16 @@ int main(void)
       float hallEffectVoltage = ((float)ADC1_BUFFER[HALL_EFFECT_IDX]) * 15.1f / 10.0f * 3.3f / 65535.0f;
       float bse3Voltage = ((float)ADC1_BUFFER[BSE3_IDX]) * 15.1f / 10.0f * 3.3f / 65535.0f;
       usb_printf("hall effect: %.3fV, bse3: %.3fV", hallEffectVoltage, bse3Voltage);
+
+      // thermistors
+      // float vt1 = ((float)ADC1_BUFFER[THERM_MOTOR_1_IDX]) * 3.3f / 65535.0f;
+      // float vt2 = ((float)ADC1_BUFFER[THERM_MOTOR_2_IDX]) * 3.3f / 65535.0f;
+      // float vt3 = ((float)ADC1_BUFFER[THERM_MOTOR_3_IDX]) * 3.3f / 65535.0f;
+      // usb_printf("t1: %.3fV, t2: %.3fV, t3: %.3fV", vt1, vt2, vt3);
+
+      // hvc
+      usb_printf("hvc status: %d bms, %d imd, %.1f max temp", hvcStatus.bmsError, hvcStatus.imdError, hvcStatus.batteryMaxTemp);
+
     }
 
     /* USER CODE END WHILE */
@@ -457,9 +473,7 @@ void SystemClock_Config(void)
   */
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE0);
 
-  while (!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY))
-  {
-  }
+  while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
 
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
@@ -483,9 +497,9 @@ void SystemClock_Config(void)
 
   /** Initializes the CPU, AHB and APB buses clocks
   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
-    | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2
-    | RCC_CLOCKTYPE_D3PCLK1 | RCC_CLOCKTYPE_D1PCLK1;
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2
+                              |RCC_CLOCKTYPE_D3PCLK1|RCC_CLOCKTYPE_D1PCLK1;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV2;
@@ -530,7 +544,7 @@ void PeriphCommonClock_Config(void)
 
 /* USER CODE END 4 */
 
-/* MPU Configuration */
+ /* MPU Configuration */
 
 void MPU_Config(void)
 {
@@ -556,6 +570,7 @@ void MPU_Config(void)
   HAL_MPU_ConfigRegion(&MPU_InitStruct);
   /* Enables the MPU */
   HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
+
 }
 
 /**

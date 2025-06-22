@@ -33,4 +33,6 @@ void hvc_periodic(HvcStatus* status)
   status->batteryMaxTemp = CAN_readFloat(BATTERY_PACK_STATUS_CELL_TOP_TEMP_TYPE, &hvcPackStatus,
                                          BATTERY_PACK_STATUS_CELL_TOP_TEMP_BYTE,
                                          BATTERY_PACK_STATUS_CELL_TOP_TEMP_PREC);
+  status->bmsError = hvcIndicators.data[0];
+  status->imdError = hvcIndicators.data[1];
 }
